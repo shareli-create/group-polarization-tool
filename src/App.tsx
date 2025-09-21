@@ -358,6 +358,238 @@ const GroupDeliberationPhase: React.FC<{
   );
 };
 
+// ============= CLASS SUMMARY COMPONENT =============
+const ClassSummary: React.FC<{
+  state: AppState;
+}> = ({ state }) => {
+  const calculateClassStats = (scenarioId: ScenarioID) => {
+    const responses = scenarioId === ScenarioID.CHESS ? state.chessResponses : state.medicalResponses;
+    
+    const groupsWithData = state.groups.filter(g => g.consensus[scenarioId]);
+    const totalGroups = groupsWithData.length;
+    
+    let riskierCount = 0;
+    let saferCount = 0;
+    let stableCount = 0;
+    
+    groupsWithData.forEach(group => {
+      const groupResponses = responses.filter(r => group.memberIds.includes(r.studentId));
+      if (groupResponses.length === 0) return;
+      
+      const individualMean = groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length;
+      const groupConsensus = group.consensus[scenarioId]?.threshold || 0;
+      const shift = groupConsensus - individualMean;
+      
+      if (shift > 0.5) riskierCount++;
+      else if (shift < -0.5) saferCount++;
+      else stableCount++;
+    });
+    
+    return { totalGroups, riskierCount, saferCount, stableCount };
+  };
+
+  const chessStats = calculateClassStats(ScenarioID.CHESS);
+  const medicalStats = calculateClassStats(ScenarioID.MEDICAL);
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <h2 className="text-3xl font-bold mb-6 text-center">סיכום כיתתי - תופעת הפולריזציה</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Chess Scenario Summary */}
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-center text-blue-600">
+              {SCENARIOS[ScenarioID.CHESS].title}
+            </h3>
+            
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-600 mb-2">מתוך {chessStats.totalGroups} קבוצות:</p>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">בחירה מסוכנת יותר ↑</span>
+                    <span className="text-2xl font-bold text-red-600">
+                      {chessStats.riskierCount}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">בחירה בטוחה יותר ↓</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {chessStats.saferCount}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">ללא שינוי משמעותי</span>
+                    <span className="text-2xl font-bold text-gray-600">
+                      {chessStats.stableCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Visual Bar Chart */}
+              <div className="mt-4">
+                <div className="space-y-2">
+                  {chessStats.riskierCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-red-500 rounded transition-all duration-500"
+                        style={{ width: `${(chessStats.riskierCount / chessStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((chessStats.riskierCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                  {chessStats.saferCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-green-500 rounded transition-all duration-500"
+                        style={{ width: `${(chessStats.saferCount / chessStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((chessStats.saferCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                  {chessStats.stableCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-gray-400 rounded transition-all duration-500"
+                        style={{ width: `${(chessStats.stableCount / chessStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((chessStats.stableCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-blue-200 text-center">
+                <p className="text-sm text-gray-700">
+                  <strong>תוצאה צפויה:</strong> רוב הקבוצות צפויות להחליט על בחירה <strong className="text-red-600">מסוכנת יותר</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Medical Scenario Summary */}
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold text-center text-purple-600">
+              {SCENARIOS[ScenarioID.MEDICAL].title}
+            </h3>
+            
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-6">
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-600 mb-2">מתוך {medicalStats.totalGroups} קבוצות:</p>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">בחירה מסוכנת יותר ↑</span>
+                    <span className="text-2xl font-bold text-red-600">
+                      {medicalStats.riskierCount}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">בחירה בטוחה יותר ↓</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {medicalStats.saferCount}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">ללא שינוי משמעותי</span>
+                    <span className="text-2xl font-bold text-gray-600">
+                      {medicalStats.stableCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Visual Bar Chart */}
+              <div className="mt-4">
+                <div className="space-y-2">
+                  {medicalStats.riskierCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-red-500 rounded transition-all duration-500"
+                        style={{ width: `${(medicalStats.riskierCount / medicalStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((medicalStats.riskierCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                  {medicalStats.saferCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-green-500 rounded transition-all duration-500"
+                        style={{ width: `${(medicalStats.saferCount / medicalStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((medicalStats.saferCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                  {medicalStats.stableCount > 0 && (
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="h-8 bg-gray-400 rounded transition-all duration-500"
+                        style={{ width: `${(medicalStats.stableCount / medicalStats.totalGroups) * 100}%` }}
+                      />
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        {((medicalStats.stableCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-purple-200 text-center">
+                <p className="text-sm text-gray-700">
+                  <strong>תוצאה צפויה:</strong> רוב הקבוצות צפויות להחליט על בחירה <strong className="text-green-600">בטוחה יותר</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overall Summary */}
+        <div className="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg">
+          <h3 className="text-xl font-bold text-center mb-4">מסקנות כלליות</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-sm text-gray-600">סך קבוצות שפולריזו</p>
+              <p className="text-3xl font-bold text-indigo-600">
+                {chessStats.riskierCount + chessStats.saferCount + medicalStats.riskierCount + medicalStats.saferCount}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">אחוז פולריזציה כללי</p>
+              <p className="text-3xl font-bold text-indigo-600">
+                {(((chessStats.riskierCount + chessStats.saferCount + medicalStats.riskierCount + medicalStats.saferCount) / 
+                   (chessStats.totalGroups + medicalStats.totalGroups)) * 100).toFixed(0)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">קבוצות שהראו דפוס צפוי</p>
+              <p className="text-3xl font-bold text-green-600">
+                {chessStats.riskierCount + medicalStats.saferCount}
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ============= STUDENT VIEW =============
 const StudentView: React.FC<{
   state: AppState;
@@ -391,13 +623,12 @@ const StudentView: React.FC<{
     </div>
   );
 };
-
-// ============= PROFESSOR VIEW =============
+/ ============= PROFESSOR VIEW =============
 const ProfessorDashboard: React.FC<{
   state: AppState;
   onStateChange: (state: AppState) => void;
 }> = ({ state, onStateChange }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'groups' | 'analysis'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'groups' | 'analysis' | 'summary'>('overview');
   
   const allStudents = React.useMemo(() => {
     const ids = new Set<string>();
@@ -466,7 +697,7 @@ const ProfessorDashboard: React.FC<{
 
       <div className="border-b mb-6">
         <nav className="flex space-x-reverse space-x-8">
-          {(['overview', 'responses', 'groups', 'analysis'] as const).map(tab => (
+          {(['overview', 'responses', 'groups', 'analysis', 'summary'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -474,7 +705,11 @@ const ProfessorDashboard: React.FC<{
                 activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'
               }`}
             >
-              {tab === 'overview' ? 'סקירה' : tab === 'responses' ? 'תשובות' : tab === 'groups' ? 'קבוצות' : 'ניתוח'}
+              {tab === 'overview' ? 'סקירה' : 
+               tab === 'responses' ? 'תשובות' : 
+               tab === 'groups' ? 'קבוצות' : 
+               tab === 'analysis' ? 'ניתוח' : 
+               'סיכום כיתתי'}
             </button>
           ))}
         </nav>
@@ -673,6 +908,10 @@ const ProfessorDashboard: React.FC<{
           })}
         </div>
       )}
+
+      {activeTab === 'summary' && (
+        <ClassSummary state={state} />
+      )}
     </div>
   );
 };
@@ -706,5 +945,3 @@ const App: React.FC = () => {
     </div>
   );
 };
-
-export default App;
