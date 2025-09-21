@@ -119,8 +119,8 @@ const Slider: React.FC<{
   </div>
 );
 
-// ============= STUDENT VIEW =============
-const StudentView: React.FC<{
+// ============= STUDENT PHASES =============
+const IndividualPhase: React.FC<{
   state: AppState;
   onStateChange: (state: AppState) => void;
 }> = ({ state, onStateChange }) => {
@@ -163,6 +163,9 @@ const StudentView: React.FC<{
       medicalResponses: [...state.medicalResponses, newMedical]
     });
     
+    // Store current student ID
+    localStorage.setItem('currentStudentId', studentId.trim());
+    
     setStudentId('');
     setChessThreshold(5);
     setChessJustification('');
@@ -172,6 +175,194 @@ const StudentView: React.FC<{
 
   const studentCount = new Set(state.chessResponses.map(r => r.studentId)).size;
 
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-center mb-2">שלב 1: החלטות אישיות</h1>
+        <p className="text-center text-gray-600">
+          אנא קרא את שני התרחישים ושלח את החלטותיך.{' '}
+          <span className="font-semibold">{studentCount} סטודנטים</span> שלחו עד כה.
+        </p>
+      </div>
+
+      <Card>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="max-w-sm mx-auto">
+            <label className="block text-sm font-medium text-gray-700 mb-1">שם או מזהה</label>
+            <input
+              type="text"
+              value={studentId}
+              onChange={e => setStudentId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              placeholder="הזן מזהה ייחודי..."
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <div className="text-right">
+                <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h2>
+                <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.CHESS].description}</p>
+                <p className="font-semibold">{SCENARIOS[ScenarioID.CHESS].question}</p>
+              </div>
+              <div className="mt-4 space-y-4">
+                <Slider label="סף הסתברות" value={chessThreshold} onChange={setChessThreshold} />
+                <textarea
+                  value={chessJustification}
+                  onChange={(e) => setChessJustification(e.target.value)}
+                  placeholder="הצדק בקצרה את תשובתך..."
+                  className="w-full p-2 border border-gray-300 rounded-md text-right"
+                  rows={3}
+                />
+              </div>
+            </Card>
+            
+            <Card>
+              <div className="text-right">
+                <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h2>
+                <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.MEDICAL].description}</p>
+                <p className="font-semibold">{SCENARIOS[ScenarioID.MEDICAL].question}</p>
+              </div>
+              <div className="mt-4 space-y-4">
+                <Slider label="סף הסתברות" value={medicalThreshold} onChange={setMedicalThreshold} />
+                <textarea
+                  value={medicalJustification}
+                  onChange={(e) => setMedicalJustification(e.target.value)}
+                  placeholder="הצדק בקצרה את תשובתך..."
+                  className="w-full p-2 border border-gray-300 rounded-md text-right"
+                  rows={3}
+                />
+              </div>
+            </Card>
+          </div>
+          
+          <div className="text-center">
+            <Button type="submit">שלח את ההחלטות שלי</Button>
+          </div>
+        </form>
+      </Card>
+    </div>
+  );
+};
+
+const GroupDeliberationPhase: React.FC<{
+  state: AppState;
+  onStateChange: (state: AppState) => void;
+}> = ({ state, onStateChange }) => {
+  const currentStudentId = localStorage.getItem('currentStudentId');
+  const currentUserGroup = state.groups.find(g => g.memberIds.includes(currentStudentId || ''));
+
+  const [chessConsensus, setChessConsensus] = useState(5);
+  const [chessJustification, setChessJustification] = useState('');
+  const [medicalConsensus, setMedicalConsensus] = useState(5);
+  const [medicalJustification, setMedicalJustification] = useState('');
+
+  useEffect(() => {
+    if (currentUserGroup) {
+      if (currentUserGroup.consensus[ScenarioID.CHESS]) {
+        setChessConsensus(currentUserGroup.consensus[ScenarioID.CHESS].threshold);
+        setChessJustification(currentUserGroup.consensus[ScenarioID.CHESS].justification);
+      }
+      if (currentUserGroup.consensus[ScenarioID.MEDICAL]) {
+        setMedicalConsensus(currentUserGroup.consensus[ScenarioID.MEDICAL].threshold);
+        setMedicalJustification(currentUserGroup.consensus[ScenarioID.MEDICAL].justification);
+      }
+    }
+  }, [currentUserGroup]);
+
+  if (!currentUserGroup) {
+    return (
+      <Card className="max-w-2xl mx-auto text-center">
+        <h2 className="text-2xl font-bold mb-4">ממתין להקצאת קבוצה</h2>
+        <p className="text-gray-600">המרצה עדיין לא שיבץ אותך לקבוצה</p>
+      </Card>
+    );
+  }
+
+  const handleSubmit = () => {
+    if (!chessJustification.trim() || !medicalJustification.trim()) {
+      alert('אנא הוסף הצדקה לשני התרחישים');
+      return;
+    }
+
+    const updatedGroups = state.groups.map(g => {
+      if (g.id === currentUserGroup.id) {
+        return {
+          ...g,
+          consensus: {
+            [ScenarioID.CHESS]: { threshold: chessConsensus, justification: chessJustification },
+            [ScenarioID.MEDICAL]: { threshold: medicalConsensus, justification: medicalJustification }
+          }
+        };
+      }
+      return g;
+    });
+    
+    onStateChange({ ...state, groups: updatedGroups });
+    alert('הקונצנזוס הקבוצתי נשמר בהצלחה!');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-center mb-2">שלב 3: דיון קבוצתי</h1>
+        <p className="text-center text-gray-600">דונו בקבוצה והגיעו להחלטה משותפת</p>
+      </div>
+
+      <Card>
+        <h3 className="text-xl font-bold mb-4">{currentUserGroup.name}</h3>
+        <p className="text-sm text-gray-600 mb-6">חברי הקבוצה: {currentUserGroup.memberIds.join(', ')}</p>
+
+        <div className="space-y-6">
+          {/* Chess Scenario */}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h4>
+            <Slider 
+              label="החלטת הקבוצה" 
+              value={chessConsensus} 
+              onChange={setChessConsensus} 
+            />
+            <textarea
+              value={chessJustification}
+              onChange={(e) => setChessJustification(e.target.value)}
+              placeholder="הצדקה קצרה להחלטת הקבוצה..."
+              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-right"
+              rows={2}
+            />
+          </div>
+
+          {/* Medical Scenario */}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h4>
+            <Slider 
+              label="החלטת הקבוצה" 
+              value={medicalConsensus} 
+              onChange={setMedicalConsensus} 
+            />
+            <textarea
+              value={medicalJustification}
+              onChange={(e) => setMedicalJustification(e.target.value)}
+              placeholder="הצדקה קצרה להחלטת הקבוצה..."
+              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-right"
+              rows={2}
+            />
+          </div>
+
+          <div className="text-center">
+            <Button onClick={handleSubmit}>שלח קונצנזוס קבוצתי</Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ============= STUDENT VIEW =============
+const StudentView: React.FC<{
+  state: AppState;
+  onStateChange: (state: AppState) => void;
+}> = ({ state, onStateChange }) => {
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50" dir="rtl">
       <header className="text-center mb-8">
@@ -184,78 +375,15 @@ const StudentView: React.FC<{
       
       <main>
         {state.phase === Phase.INDIVIDUAL_INPUT ? (
-          <div className="max-w-7xl mx-auto space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold text-center mb-2">שלב 1: החלטות אישיות</h1>
-              <p className="text-center text-gray-600">
-                אנא קרא את שני התרחישים ושלח את החלטותיך.{' '}
-                <span className="font-semibold">{studentCount} סטודנטים</span> שלחו עד כה.
-              </p>
-            </div>
-
-            <Card>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="max-w-sm mx-auto">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">שם או מזהה</label>
-                  <input
-                    type="text"
-                    value={studentId}
-                    onChange={e => setStudentId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="הזן מזהה ייחודי..."
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <div className="text-right">
-                      <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h2>
-                      <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.CHESS].description}</p>
-                      <p className="font-semibold">{SCENARIOS[ScenarioID.CHESS].question}</p>
-                    </div>
-                    <div className="mt-4 space-y-4">
-                      <Slider label="סף הסתברות" value={chessThreshold} onChange={setChessThreshold} />
-                      <textarea
-                        value={chessJustification}
-                        onChange={(e) => setChessJustification(e.target.value)}
-                        placeholder="הצדק בקצרה את תשובתך..."
-                        className="w-full p-2 border border-gray-300 rounded-md text-right"
-                        rows={3}
-                      />
-                    </div>
-                  </Card>
-                  
-                  <Card>
-                    <div className="text-right">
-                      <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h2>
-                      <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.MEDICAL].description}</p>
-                      <p className="font-semibold">{SCENARIOS[ScenarioID.MEDICAL].question}</p>
-                    </div>
-                    <div className="mt-4 space-y-4">
-                      <Slider label="סף הסתברות" value={medicalThreshold} onChange={setMedicalThreshold} />
-                      <textarea
-                        value={medicalJustification}
-                        onChange={(e) => setMedicalJustification(e.target.value)}
-                        placeholder="הצדק בקצרה את תשובתך..."
-                        className="w-full p-2 border border-gray-300 rounded-md text-right"
-                        rows={3}
-                      />
-                    </div>
-                  </Card>
-                </div>
-                
-                <div className="text-center">
-                  <Button type="submit">שלח את ההחלטות שלי</Button>
-                </div>
-              </form>
-            </Card>
-          </div>
+          <IndividualPhase state={state} onStateChange={onStateChange} />
+        ) : state.phase === Phase.GROUP_DELIBERATION ? (
+          <GroupDeliberationPhase state={state} onStateChange={onStateChange} />
         ) : (
           <Card className="max-w-2xl mx-auto text-center">
             <h2 className="text-2xl font-bold mb-4">ממתין לשלב הבא</h2>
             <p className="text-gray-600">
-              התשובות שלך נקלטו. אנא המתן למרצה להעביר לשלב הבא.
+              {state.phase === Phase.GROUP_FORMATION && 'המרצה מקצה קבוצות...'}
+              {state.phase === Phase.RESULTS_DEBRIEF && 'המרצה מציג תוצאות...'}
             </p>
           </Card>
         )}
@@ -269,7 +397,7 @@ const ProfessorDashboard: React.FC<{
   state: AppState;
   onStateChange: (state: AppState) => void;
 }> = ({ state, onStateChange }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'groups'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'groups' | 'analysis'>('overview');
   
   const allStudents = React.useMemo(() => {
     const ids = new Set<string>();
@@ -338,7 +466,7 @@ const ProfessorDashboard: React.FC<{
 
       <div className="border-b mb-6">
         <nav className="flex space-x-reverse space-x-8">
-          {(['overview', 'responses', 'groups'] as const).map(tab => (
+          {(['overview', 'responses', 'groups', 'analysis'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -346,7 +474,7 @@ const ProfessorDashboard: React.FC<{
                 activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'
               }`}
             >
-              {tab === 'overview' ? 'סקירה' : tab === 'responses' ? 'תשובות' : 'קבוצות'}
+              {tab === 'overview' ? 'סקירה' : tab === 'responses' ? 'תשובות' : tab === 'groups' ? 'קבוצות' : 'ניתוח'}
             </button>
           ))}
         </nav>
@@ -371,6 +499,42 @@ const ProfessorDashboard: React.FC<{
         </div>
       )}
 
+      {activeTab === 'responses' && (
+        <div className="space-y-6">
+          {Object.entries(SCENARIOS).map(([scenarioId, scenario]) => (
+            <Card key={scenarioId}>
+              <h3 className="text-xl font-bold mb-4">{scenario.title}</h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">מזהה</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">סף</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">הצדקה</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {(scenarioId === 'chess' ? state.chessResponses : state.medicalResponses).map(response => (
+                      <tr key={response.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {response.studentId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          {response.threshold}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          {response.justification}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {activeTab === 'groups' && (
         <div className="space-y-6">
           <Card>
@@ -388,9 +552,125 @@ const ProfessorDashboard: React.FC<{
               <Card key={group.id}>
                 <h4 className="font-bold mb-2">{group.name}</h4>
                 <p className="text-sm text-gray-600">חברים: {group.memberIds.join(', ')}</p>
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs">
+                    שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
+                  </p>
+                  <p className="text-xs">
+                    רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
+                  </p>
+                </div>
               </Card>
             ))}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'analysis' && (
+        <div className="space-y-6">
+          {Object.entries(SCENARIOS).map(([scenarioId, scenario]) => {
+            const responses = scenarioId === 'chess' ? state.chessResponses : state.medicalResponses;
+            
+            return (
+              <Card key={scenarioId}>
+                <h3 className="text-2xl font-bold mb-6">{scenario.title} - ניתוח</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {state.groups.map(group => {
+                    const groupResponses = responses.filter(r => group.memberIds.includes(r.studentId));
+                    const individualMean = groupResponses.length > 0 
+                      ? groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length 
+                      : 0;
+                    const groupConsensus = group.consensus[scenarioId as ScenarioID]?.threshold || 0;
+                    const shift = groupConsensus - individualMean;
+                    const isPolarized = Math.abs(shift) > 0.5;
+
+                    if (!group.consensus[scenarioId as ScenarioID]) return null;
+
+                    return (
+                      <Card key={group.id} className={isPolarized ? 'border-2 border-red-500' : ''}>
+                        <h4 className="font-bold mb-3">{group.name}</h4>
+                        
+                        <div className="mb-4">
+                          <div className="flex justify-between text-sm mb-2">
+                            <span>ממוצע: {individualMean.toFixed(2)}</span>
+                            <span>קונצנזוס: {groupConsensus.toFixed(2)}</span>
+                          </div>
+                          
+                          <div className="relative h-12 bg-gray-200 rounded">
+                            <div 
+                              className="absolute h-full bg-blue-400 rounded"
+                              style={{ width: `${(individualMean / 10) * 100}%` }}
+                            />
+                            <div 
+                              className="absolute bottom-0 h-6 bg-red-500 rounded"
+                              style={{ width: `${(groupConsensus / 10) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1 text-sm">
+                          <p>שינוי: <span className={shift > 0 ? 'text-red-600 font-bold' : 'text-blue-600 font-bold'}>
+                            {shift > 0 ? '+' : ''}{shift.toFixed(2)}
+                          </span></p>
+                          <p>כיוון: {shift > 0.3 ? '↑ מחפש סיכון' : shift < -0.3 ? '↓ נמנע מסיכון' : 'יציב'}</p>
+                          {isPolarized && <p className="text-red-600">⚠️ פולריזציה</p>}
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-gray-600">דירוגים אישיים:</p>
+                          <div className="flex gap-1 flex-wrap mt-1">
+                            {groupResponses.map(r => (
+                              <span key={r.id} className="px-2 py-1 bg-gray-200 rounded text-xs">
+                                {r.studentId}: {r.threshold}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-bold mb-2">סיכום - {scenario.title}</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">קבוצות שפולריזו:</p>
+                      <p className="text-xl font-bold text-red-600">
+                        {state.groups.filter(g => {
+                          const groupResponses = responses.filter(r => g.memberIds.includes(r.studentId));
+                          const mean = groupResponses.length > 0 ? groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length : 0;
+                          const consensus = g.consensus[scenarioId as ScenarioID]?.threshold || 0;
+                          return Math.abs(consensus - mean) > 0.5;
+                        }).length}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">שינוי ממוצע:</p>
+                      <p className="text-xl font-bold">
+                        {(() => {
+                          const shifts = state.groups.map(g => {
+                            const groupResponses = responses.filter(r => g.memberIds.includes(r.studentId));
+                            const mean = groupResponses.length > 0 ? groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length : 0;
+                            return (g.consensus[scenarioId as ScenarioID]?.threshold || 0) - mean;
+                          });
+                          const avgShift = shifts.reduce((a, b) => a + b, 0) / shifts.length;
+                          return avgShift > 0 ? `↑ ${avgShift.toFixed(2)}` : `↓ ${Math.abs(avgShift).toFixed(2)}`;
+                        })()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">דפוס צפוי:</p>
+                      <p className="text-sm">
+                        {scenarioId === 'chess' ? '↑ גבוה יותר' : '↓ נמוך יותר'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
