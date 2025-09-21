@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
+// ייבא את הטיפוסים מ-App במקום להגדיר מחדש
 interface AppState {
-  phase: string;
+  phase: string;  // שינוי זה חשוב - תשאיר string במקום Phase
   chessResponses: any[];
   medicalResponses: any[];
   groups: any[];
@@ -26,7 +27,8 @@ export const useFirebaseState = () => {
     const unsubscribe = onSnapshot(docRef, 
       (doc) => {
         if (doc.exists()) {
-          setState(doc.data() as AppState);
+          const data = doc.data();
+          setState(data as AppState);
         } else {
           setDoc(docRef, INITIAL_STATE);
         }
@@ -41,10 +43,10 @@ export const useFirebaseState = () => {
     return () => unsubscribe();
   }, []);
 
-  const updateState = async (newState: AppState) => {
+  const updateState = async (newState: any) => {  // שינוי ל-any
     try {
       const docRef = doc(db, 'sessions', 'current');
-      await setDoc(docRef, newState);
+      await setDoc(docRef, JSON.parse(JSON.stringify(newState)));
     } catch (error) {
       console.error("Error updating state:", error);
     }
