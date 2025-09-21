@@ -945,3 +945,5 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+export default App;  // ← Make sure this line is there!
