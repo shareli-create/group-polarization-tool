@@ -1,0 +1,5 @@
+{
+  "name": "Group Polarization Classroom Tool",
+  "description": "An interactive AI assistant for running, visualizing, and analyzing group decision-making and polarization in an academic setting. It guides students through scenarios, collects individual and group responses, and provides real-time visual feedback and analysis.",
+  "requestFramePermissions": []
+}

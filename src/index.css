@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Arial', 'David', 'Calibri', sans-serif;
+  direction: rtl;
+  background-color: #f9fafb;
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+  direction: rtl;
+  text-align: right;
+}
+
+table {
+  direction: rtl;
+}
