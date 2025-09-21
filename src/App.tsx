@@ -623,7 +623,7 @@ const StudentView: React.FC<{
     </div>
   );
 };
-/ ============= PROFESSOR VIEW =============
+// ============= PROFESSOR VIEW =============
 const ProfessorDashboard: React.FC<{
   state: AppState;
   onStateChange: (state: AppState) => void;
