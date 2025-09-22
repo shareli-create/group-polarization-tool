@@ -355,7 +355,7 @@ const GroupDeliberationPhase: React.FC<{
   );
 };
 
-// ============= CORRECT TWO-VARIABLE BAR GRAPH =============
+// ============= CORRECT RISK SCALE BAR GRAPH =============
 const GroupResultsAnalysis: React.FC<{
   state: AppState;
 }> = ({ state }) => {
@@ -383,11 +383,11 @@ const GroupResultsAnalysis: React.FC<{
                     <h4 className="font-bold text-xl mb-6 text-center">{group.name}</h4>
                     
                     <div className="mb-6">
-                      {/* Scale labels */}
+                      {/* Correct scale labels */}
                       <div className="flex justify-between text-sm font-medium mb-3 text-gray-700">
-                        <span>0 (בטוח)</span>
-                        <span>5</span>
-                        <span>10 (מסוכן)</span>
+                        <span>0 (מאוד מסוכן)</span>
+                        <span>5 (ממוצע)</span>
+                        <span>10 (מאוד בטוח)</span>
                       </div>
                       
                       {/* Individual Mean Bar */}
@@ -410,6 +410,11 @@ const GroupResultsAnalysis: React.FC<{
                             style={{ width: `${(groupConsensus / 10) * 100}%` }}
                           />
                         </div>
+                      </div>
+                      
+                      {/* Explanation */}
+                      <div className="text-xs text-gray-500 mt-2 text-center">
+                        מספרים נמוכים = נכונות לקחת סיכון עם סיכוי הצלחה נמוך
                       </div>
                     </div>
 
