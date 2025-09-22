@@ -355,7 +355,7 @@ const GroupDeliberationPhase: React.FC<{
   );
 };
 
-// ============= IMPROVED GROUP RESULTS ANALYSIS WITH BAR GRAPHS =============
+// ============= FIXED BAR GRAPH ANALYSIS =============
 const GroupResultsAnalysis: React.FC<{
   state: AppState;
 }> = ({ state }) => {
@@ -379,60 +379,44 @@ const GroupResultsAnalysis: React.FC<{
                 if (!group.consensus[scenarioId as ScenarioID]) return null;
 
                 return (
-                  <div key={group.id} className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm">
-                    <h4 className="font-bold text-xl mb-4 text-center text-gray-800">{group.name}</h4>
+                  <div key={group.id} className="border p-4">
+                    <h4 className="font-bold text-lg mb-4 text-center">{group.name}</h4>
                     
-                    {/* Improved Bar Chart */}
-                    <div className="mb-6">
-                      <div className="flex justify-between text-sm mb-3 font-medium text-gray-700">
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-2 font-medium">
                         <span>0 (בטוח)</span>
                         <span>5</span>
                         <span>10 (מסוכן)</span>
                       </div>
                       
-                      {/* Scale bar with better design */}
-                      <div className="relative h-16 bg-gradient-to-r from-green-100 via-yellow-100 to-red-100 rounded-lg border-2 border-gray-300">
-                        {/* Scale markers */}
-                        {[1,2,3,4,5,6,7,8,9].map(i => (
-                          <div 
-                            key={i}
-                            className="absolute top-0 bottom-0 w-px bg-gray-300"
-                            style={{ left: `${i * 10}%` }}
-                          />
-                        ))}
-                        
-                        {/* Individual mean bar (blue) */}
+                      <div className="relative h-10 bg-gray-300 border border-gray-400">
                         <div 
-                          className="absolute top-2 bottom-2 bg-blue-500 rounded shadow-sm"
+                          className="absolute top-0 bottom-0 bg-blue-500"
                           style={{ 
-                            left: '4px',
-                            width: `${Math.max(((individualMean / 10) * 100) - 1, 0)}%`
+                            width: `${(individualMean / 10) * 100}%`
                           }}
                         />
                         
-                        {/* Group consensus marker (red) */}
                         <div 
-                          className="absolute top-0 bottom-0 w-2 bg-red-600 rounded shadow-md z-10"
-                          style={{ left: `${(groupConsensus / 10) * 100}%`, transform: 'translateX(-50%)' }}
+                          className="absolute top-0 bottom-0 w-1 bg-red-600"
+                          style={{ 
+                            left: `${(groupConsensus / 10) * 100}%`
+                          }}
                         />
                       </div>
                       
-                      <div className="flex justify-between text-base mt-3 font-semibold">
-                        <span className="text-blue-600">
-                          ממוצע אישי: {individualMean.toFixed(1)}
-                        </span>
-                        <span className="text-red-600">
-                          החלטת קבוצה: {groupConsensus.toFixed(1)}
-                        </span>
+                      <div className="text-center text-sm mt-2">
+                        <span className="text-blue-600 font-medium">ממוצע: {individualMean.toFixed(1)}</span>
+                        {' | '}
+                        <span className="text-red-600 font-medium">קבוצה: {groupConsensus.toFixed(1)}</span>
                       </div>
                     </div>
 
-                    {/* Individual ratings */}
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-3 font-medium">דירוגים אישיים:</p>
-                      <div className="flex gap-3 justify-center flex-wrap">
+                      <p className="text-sm text-gray-600 mb-2">דירוגים אישיים:</p>
+                      <div className="flex gap-2 justify-center flex-wrap">
                         {groupResponses.map(r => (
-                          <span key={r.id} className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium">
+                          <span key={r.id} className="px-2 py-1 bg-gray-100 border text-sm">
                             {r.studentId}: {r.threshold}
                           </span>
                         ))}
@@ -484,7 +468,6 @@ const ClassSummaryTable: React.FC<{
   const chessStats = calculateStats(ScenarioID.CHESS);
   const medicalStats = calculateStats(ScenarioID.MEDICAL);
   
-  // Get unique groups that completed both scenarios
   const completedGroups = state.groups.filter(g => 
     g.consensus[ScenarioID.CHESS] && g.consensus[ScenarioID.MEDICAL]
   );
@@ -625,7 +608,6 @@ const ProfessorDashboard: React.FC<{
   };
 
   const simulateResults = () => {
-    // Create 5 mock groups with simulated data
     const mockGroups: Group[] = [];
     const mockChessResponses: IndividualResponse[] = [];
     const mockMedicalResponses: IndividualResponse[] = [];
@@ -633,9 +615,7 @@ const ProfessorDashboard: React.FC<{
     for (let groupNum = 1; groupNum <= 5; groupNum++) {
       const memberIds = [`Student${groupNum}A`, `Student${groupNum}B`, `Student${groupNum}C`];
       
-      // Create individual responses for each group member
       memberIds.forEach((studentId, index) => {
-        // Chess responses - varied around different means per group
         const chessBase = 3 + groupNum * 1.2 + Math.random() * 2;
         mockChessResponses.push({
           id: crypto.randomUUID(),
@@ -645,7 +625,6 @@ const ProfessorDashboard: React.FC<{
           timestamp: Date.now()
         });
 
-        // Medical responses - varied around different means per group
         const medicalBase = 5.5 + groupNum * 0.8 + Math.random() * 2;
         mockMedicalResponses.push({
           id: crypto.randomUUID(),
@@ -656,14 +635,12 @@ const ProfessorDashboard: React.FC<{
         });
       });
 
-      // Calculate group means and create consensus with polarization
       const groupChessResponses = mockChessResponses.filter(r => memberIds.includes(r.studentId));
       const groupMedicalResponses = mockMedicalResponses.filter(r => memberIds.includes(r.studentId));
       
       const chessMean = groupChessResponses.reduce((sum, r) => sum + r.threshold, 0) / groupChessResponses.length;
       const medicalMean = groupMedicalResponses.reduce((sum, r) => sum + r.threshold, 0) / groupMedicalResponses.length;
 
-      // Add polarization - chess tends toward risk, medical toward caution
       const chessConsensus = Math.min(10, Math.max(1, chessMean + (Math.random() > 0.3 ? 1 : -0.5)));
       const medicalConsensus = Math.min(10, Math.max(1, medicalMean + (Math.random() > 0.3 ? -1 : 0.5)));
 
