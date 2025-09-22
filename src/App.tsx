@@ -355,7 +355,7 @@ const GroupDeliberationPhase: React.FC<{
   );
 };
 
-// ============= FIXED BAR GRAPH ANALYSIS =============
+/// ============= PROPERLY FIXED BAR GRAPH ANALYSIS =============
 const GroupResultsAnalysis: React.FC<{
   state: AppState;
 }> = ({ state }) => {
@@ -368,7 +368,7 @@ const GroupResultsAnalysis: React.FC<{
           <Card key={scenarioId}>
             <h3 className="text-2xl font-bold mb-6 text-center">{scenario.title}</h3>
             
-            <div className="space-y-6">
+            <div className="space-y-8">
               {state.groups.map(group => {
                 const groupResponses = responses.filter(r => group.memberIds.includes(r.studentId));
                 const individualMean = groupResponses.length > 0 
@@ -379,44 +379,65 @@ const GroupResultsAnalysis: React.FC<{
                 if (!group.consensus[scenarioId as ScenarioID]) return null;
 
                 return (
-                  <div key={group.id} className="border p-4">
-                    <h4 className="font-bold text-lg mb-4 text-center">{group.name}</h4>
+                  <div key={group.id} className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-lg">
+                    <h4 className="font-bold text-xl mb-6 text-center text-gray-800">{group.name}</h4>
                     
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-2 font-medium">
-                        <span>0 (בטוח)</span>
-                        <span>5</span>
-                        <span>10 (מסוכן)</span>
+                    <div className="mb-6">
+                      {/* Scale labels */}
+                      <div className="flex justify-between text-base font-semibold mb-4 text-gray-700">
+                        <span>10 (מסוכן מאוד)</span>
+                        <span>5 (ממוצע)</span>
+                        <span>0 (בטוח מאוד)</span>
                       </div>
                       
-                      <div className="relative h-10 bg-gray-300 border border-gray-400">
+                      {/* Bar container - REVERSED: 10 on left, 0 on right */}
+                      <div className="relative h-16 bg-gradient-to-r from-red-200 via-yellow-200 to-green-200 rounded-lg border-2 border-gray-400 shadow-inner">
+                        {/* Scale markers */}
+                        {[1,2,3,4,5,6,7,8,9].map(i => (
+                          <div 
+                            key={i}
+                            className="absolute top-0 bottom-0 w-0.5 bg-gray-400 opacity-60"
+                            style={{ left: `${((10-i) / 10) * 100}%` }}
+                          />
+                        ))}
+                        
+                        {/* Individual mean bar (blue) - REVERSED calculation */}
                         <div 
-                          className="absolute top-0 bottom-0 bg-blue-500"
+                          className="absolute top-2 bottom-2 bg-blue-600 rounded-md shadow-md opacity-80"
                           style={{ 
+                            left: `${((10 - individualMean) / 10) * 100}%`,
                             width: `${(individualMean / 10) * 100}%`
                           }}
                         />
                         
+                        {/* Group consensus marker (red) - REVERSED calculation */}
                         <div 
-                          className="absolute top-0 bottom-0 w-1 bg-red-600"
+                          className="absolute top-0 bottom-0 w-1.5 bg-red-700 rounded-full shadow-lg z-10"
                           style={{ 
-                            left: `${(groupConsensus / 10) * 100}%`
+                            left: `${((10 - groupConsensus) / 10) * 100}%`
                           }}
                         />
                       </div>
                       
-                      <div className="text-center text-sm mt-2">
-                        <span className="text-blue-600 font-medium">ממוצע: {individualMean.toFixed(1)}</span>
-                        {' | '}
-                        <span className="text-red-600 font-medium">קבוצה: {groupConsensus.toFixed(1)}</span>
+                      {/* Values display */}
+                      <div className="flex justify-between items-center mt-4">
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">ממוצע אישי</div>
+                          <div className="text-xl font-bold text-blue-600">{individualMean.toFixed(1)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm text-gray-600 mb-1">החלטת קבוצה</div>
+                          <div className="text-xl font-bold text-red-700">{groupConsensus.toFixed(1)}</div>
+                        </div>
                       </div>
                     </div>
 
+                    {/* Individual ratings */}
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-2">דירוגים אישיים:</p>
-                      <div className="flex gap-2 justify-center flex-wrap">
+                      <p className="text-base text-gray-600 mb-3 font-medium">דירוגים אישיים:</p>
+                      <div className="flex gap-3 justify-center flex-wrap">
                         {groupResponses.map(r => (
-                          <span key={r.id} className="px-2 py-1 bg-gray-100 border text-sm">
+                          <span key={r.id} className="px-4 py-2 bg-gray-50 border-2 border-gray-300 rounded-lg text-base font-medium shadow-sm">
                             {r.studentId}: {r.threshold}
                           </span>
                         ))}
