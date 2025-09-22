@@ -355,7 +355,7 @@ const GroupDeliberationPhase: React.FC<{
   );
 };
 
-// ============= SIMPLE GROUP RESULTS ANALYSIS =============
+// ============= IMPROVED GROUP RESULTS ANALYSIS WITH BAR GRAPHS =============
 const GroupResultsAnalysis: React.FC<{
   state: AppState;
 }> = ({ state }) => {
@@ -368,7 +368,7 @@ const GroupResultsAnalysis: React.FC<{
           <Card key={scenarioId}>
             <h3 className="text-2xl font-bold mb-6 text-center">{scenario.title}</h3>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               {state.groups.map(group => {
                 const groupResponses = responses.filter(r => group.memberIds.includes(r.studentId));
                 const individualMean = groupResponses.length > 0 
@@ -379,22 +379,64 @@ const GroupResultsAnalysis: React.FC<{
                 if (!group.consensus[scenarioId as ScenarioID]) return null;
 
                 return (
-                  <div key={group.id} className="border rounded p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="font-bold">{group.name}</h4>
-                      <div className="text-sm">
-                        <span className="text-blue-600">ממוצע: {individualMean.toFixed(1)}</span>
-                        {' | '}
-                        <span className="text-red-600">קבוצה: {groupConsensus.toFixed(1)}</span>
+                  <div key={group.id} className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm">
+                    <h4 className="font-bold text-xl mb-4 text-center text-gray-800">{group.name}</h4>
+                    
+                    {/* Improved Bar Chart */}
+                    <div className="mb-6">
+                      <div className="flex justify-between text-sm mb-3 font-medium text-gray-700">
+                        <span>0 (בטוח)</span>
+                        <span>5</span>
+                        <span>10 (מסוכן)</span>
+                      </div>
+                      
+                      {/* Scale bar with better design */}
+                      <div className="relative h-16 bg-gradient-to-r from-green-100 via-yellow-100 to-red-100 rounded-lg border-2 border-gray-300">
+                        {/* Scale markers */}
+                        {[1,2,3,4,5,6,7,8,9].map(i => (
+                          <div 
+                            key={i}
+                            className="absolute top-0 bottom-0 w-px bg-gray-300"
+                            style={{ left: `${i * 10}%` }}
+                          />
+                        ))}
+                        
+                        {/* Individual mean bar (blue) */}
+                        <div 
+                          className="absolute top-2 bottom-2 bg-blue-500 rounded shadow-sm"
+                          style={{ 
+                            left: '4px',
+                            width: `${Math.max(((individualMean / 10) * 100) - 1, 0)}%`
+                          }}
+                        />
+                        
+                        {/* Group consensus marker (red) */}
+                        <div 
+                          className="absolute top-0 bottom-0 w-2 bg-red-600 rounded shadow-md z-10"
+                          style={{ left: `${(groupConsensus / 10) * 100}%`, transform: 'translateX(-50%)' }}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-between text-base mt-3 font-semibold">
+                        <span className="text-blue-600">
+                          ממוצע אישי: {individualMean.toFixed(1)}
+                        </span>
+                        <span className="text-red-600">
+                          החלטת קבוצה: {groupConsensus.toFixed(1)}
+                        </span>
                       </div>
                     </div>
-                    
-                    <div className="flex gap-1 text-xs">
-                      {groupResponses.map(r => (
-                        <span key={r.id} className="px-2 py-1 bg-gray-100 rounded">
-                          {r.studentId}: {r.threshold}
-                        </span>
-                      ))}
+
+                    {/* Individual ratings */}
+                    <div className="text-center">
+                      <p className="text-sm text-gray-600 mb-3 font-medium">דירוגים אישיים:</p>
+                      <div className="flex gap-3 justify-center flex-wrap">
+                        {groupResponses.map(r => (
+                          <span key={r.id} className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium">
+                            {r.studentId}: {r.threshold}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 );
@@ -407,7 +449,7 @@ const GroupResultsAnalysis: React.FC<{
   );
 };
 
-// ============= CLASS SUMMARY TABLE =============
+// ============= FIXED CLASS SUMMARY TABLE =============
 const ClassSummaryTable: React.FC<{
   state: AppState;
 }> = ({ state }) => {
@@ -441,11 +483,22 @@ const ClassSummaryTable: React.FC<{
 
   const chessStats = calculateStats(ScenarioID.CHESS);
   const medicalStats = calculateStats(ScenarioID.MEDICAL);
+  
+  // Get unique groups that completed both scenarios
+  const completedGroups = state.groups.filter(g => 
+    g.consensus[ScenarioID.CHESS] && g.consensus[ScenarioID.MEDICAL]
+  );
 
   return (
     <div className="space-y-6">
       <Card>
         <h2 className="text-3xl font-bold mb-8 text-center">סיכום תוצאות הכיתה</h2>
+        
+        <div className="mb-6 text-center">
+          <p className="text-lg font-medium text-gray-700">
+            סה"כ קבוצות שהשלימו את שני התרחישים: <span className="text-2xl font-bold text-blue-600">{completedGroups.length}</span>
+          </p>
+        </div>
         
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border border-gray-300">
@@ -464,7 +517,6 @@ const ClassSummaryTable: React.FC<{
                   מסוכן יותר מהממוצע<br/>
                   <span className="text-sm font-normal">(הפרש &gt; +0.3)</span>
                 </th>
-                <th className="border border-gray-300 px-6 py-4 text-center font-bold">סה"כ קבוצות</th>
               </tr>
             </thead>
             <tbody>
@@ -481,9 +533,6 @@ const ClassSummaryTable: React.FC<{
                 <td className="border border-gray-300 px-6 py-4 text-center text-2xl font-bold text-red-600">
                   {chessStats.riskier}
                 </td>
-                <td className="border border-gray-300 px-6 py-4 text-center text-xl font-bold">
-                  {chessStats.total}
-                </td>
               </tr>
               <tr>
                 <td className="border border-gray-300 px-6 py-4 font-medium bg-purple-50">
@@ -497,9 +546,6 @@ const ClassSummaryTable: React.FC<{
                 </td>
                 <td className="border border-gray-300 px-6 py-4 text-center text-2xl font-bold text-red-600">
                   {medicalStats.riskier}
-                </td>
-                <td className="border border-gray-300 px-6 py-4 text-center text-xl font-bold">
-                  {medicalStats.total}
                 </td>
               </tr>
             </tbody>
