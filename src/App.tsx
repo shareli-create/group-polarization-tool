@@ -315,7 +315,6 @@ const GroupDeliberationPhase: React.FC<{
         <p className="text-sm text-gray-600 mb-6">חברי הקבוצה: {currentUserGroup.memberIds.join(', ')}</p>
 
         <div className="space-y-6">
-          {/* Chess Scenario */}
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h4>
             <Slider 
@@ -332,7 +331,6 @@ const GroupDeliberationPhase: React.FC<{
             />
           </div>
 
-          {/* Medical Scenario */}
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h4>
             <Slider 
@@ -368,9 +366,9 @@ const ClassSummary: React.FC<{
     const groupsWithData = state.groups.filter(g => g.consensus[scenarioId]);
     const totalGroups = groupsWithData.length;
     
-    let riskierCount = 0;
-    let saferCount = 0;
-    let stableCount = 0;
+    let polarizedTowardsRisk = 0;
+    let polarizedTowardsCaution = 0;
+    let noPolarization = 0;
     
     groupsWithData.forEach(group => {
       const groupResponses = responses.filter(r => group.memberIds.includes(r.studentId));
@@ -380,12 +378,12 @@ const ClassSummary: React.FC<{
       const groupConsensus = group.consensus[scenarioId]?.threshold || 0;
       const shift = groupConsensus - individualMean;
       
-      if (shift > 0.5) riskierCount++;
-      else if (shift < -0.5) saferCount++;
-      else stableCount++;
+      if (shift > 0.5) polarizedTowardsRisk++;
+      else if (shift < -0.5) polarizedTowardsCaution++;
+      else noPolarization++;
     });
     
-    return { totalGroups, riskierCount, saferCount, stableCount };
+    return { totalGroups, polarizedTowardsRisk, polarizedTowardsCaution, noPolarization };
   };
 
   const chessStats = calculateClassStats(ScenarioID.CHESS);
@@ -394,10 +392,9 @@ const ClassSummary: React.FC<{
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="text-3xl font-bold mb-6 text-center">סיכום כיתתי - תופעת הפולריזציה</h2>
+        <h2 className="text-3xl font-bold mb-6 text-center">סיכום כיתתי - תופעת הקיטוב הקבוצתי</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Chess Scenario Summary */}
           <div className="space-y-4">
             <h3 className="text-2xl font-bold text-center text-blue-600">
               {SCENARIOS[ScenarioID.CHESS].title}
@@ -409,61 +406,60 @@ const ClassSummary: React.FC<{
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">בחירה מסוכנת יותר ↑</span>
+                    <span className="text-lg">קיטוב לכיוון סיכון ↑</span>
                     <span className="text-2xl font-bold text-red-600">
-                      {chessStats.riskierCount}
+                      {chessStats.polarizedTowardsRisk}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">בחירה בטוחה יותר ↓</span>
+                    <span className="text-lg">קיטוב לכיוון זהירות ↓</span>
                     <span className="text-2xl font-bold text-green-600">
-                      {chessStats.saferCount}
+                      {chessStats.polarizedTowardsCaution}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">ללא שינוי משמעותי</span>
+                    <span className="text-lg">ללא קיטוב</span>
                     <span className="text-2xl font-bold text-gray-600">
-                      {chessStats.stableCount}
+                      {chessStats.noPolarization}
                     </span>
                   </div>
                 </div>
               </div>
               
-              {/* Visual Bar Chart */}
               <div className="mt-4">
                 <div className="space-y-2">
-                  {chessStats.riskierCount > 0 && (
+                  {chessStats.polarizedTowardsRisk > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-red-500 rounded transition-all duration-500"
-                        style={{ width: `${(chessStats.riskierCount / chessStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(chessStats.polarizedTowardsRisk / chessStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((chessStats.riskierCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                        {((chessStats.polarizedTowardsRisk / chessStats.totalGroups) * 100).toFixed(0)}% לסיכון
                       </span>
                     </div>
                   )}
-                  {chessStats.saferCount > 0 && (
+                  {chessStats.polarizedTowardsCaution > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-green-500 rounded transition-all duration-500"
-                        style={{ width: `${(chessStats.saferCount / chessStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(chessStats.polarizedTowardsCaution / chessStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((chessStats.saferCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                        {((chessStats.polarizedTowardsCaution / chessStats.totalGroups) * 100).toFixed(0)}% לזהירות
                       </span>
                     </div>
                   )}
-                  {chessStats.stableCount > 0 && (
+                  {chessStats.noPolarization > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-gray-400 rounded transition-all duration-500"
-                        style={{ width: `${(chessStats.stableCount / chessStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(chessStats.noPolarization / chessStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((chessStats.stableCount / chessStats.totalGroups) * 100).toFixed(0)}%
+                        {((chessStats.noPolarization / chessStats.totalGroups) * 100).toFixed(0)}% יציב
                       </span>
                     </div>
                   )}
@@ -472,13 +468,12 @@ const ClassSummary: React.FC<{
               
               <div className="mt-4 pt-4 border-t border-blue-200 text-center">
                 <p className="text-sm text-gray-700">
-                  <strong>תוצאה צפויה:</strong> רוב הקבוצות צפויות להחליט על בחירה <strong className="text-red-600">מסוכנת יותר</strong>
+                  <strong>קיטוב צפוי:</strong> קבוצות נוטות להחליט על <strong className="text-red-600">סיכון גבוה יותר</strong> מהממוצע האישי
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Medical Scenario Summary */}
           <div className="space-y-4">
             <h3 className="text-2xl font-bold text-center text-purple-600">
               {SCENARIOS[ScenarioID.MEDICAL].title}
@@ -490,61 +485,60 @@ const ClassSummary: React.FC<{
                 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">בחירה מסוכנת יותר ↑</span>
+                    <span className="text-lg">קיטוב לכיוון סיכון ↑</span>
                     <span className="text-2xl font-bold text-red-600">
-                      {medicalStats.riskierCount}
+                      {medicalStats.polarizedTowardsRisk}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">בחירה בטוחה יותר ↓</span>
+                    <span className="text-lg">קיטוב לכיוון זהירות ↓</span>
                     <span className="text-2xl font-bold text-green-600">
-                      {medicalStats.saferCount}
+                      {medicalStats.polarizedTowardsCaution}
                     </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-lg">ללא שינוי משמעותי</span>
+                    <span className="text-lg">ללא קיטוב</span>
                     <span className="text-2xl font-bold text-gray-600">
-                      {medicalStats.stableCount}
+                      {medicalStats.noPolarization}
                     </span>
                   </div>
                 </div>
               </div>
               
-              {/* Visual Bar Chart */}
               <div className="mt-4">
                 <div className="space-y-2">
-                  {medicalStats.riskierCount > 0 && (
+                  {medicalStats.polarizedTowardsRisk > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-red-500 rounded transition-all duration-500"
-                        style={{ width: `${(medicalStats.riskierCount / medicalStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(medicalStats.polarizedTowardsRisk / medicalStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((medicalStats.riskierCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                        {((medicalStats.polarizedTowardsRisk / medicalStats.totalGroups) * 100).toFixed(0)}% לסיכון
                       </span>
                     </div>
                   )}
-                  {medicalStats.saferCount > 0 && (
+                  {medicalStats.polarizedTowardsCaution > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-green-500 rounded transition-all duration-500"
-                        style={{ width: `${(medicalStats.saferCount / medicalStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(medicalStats.polarizedTowardsCaution / medicalStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((medicalStats.saferCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                        {((medicalStats.polarizedTowardsCaution / medicalStats.totalGroups) * 100).toFixed(0)}% לזהירות
                       </span>
                     </div>
                   )}
-                  {medicalStats.stableCount > 0 && (
+                  {medicalStats.noPolarization > 0 && (
                     <div className="flex items-center gap-2">
                       <div 
                         className="h-8 bg-gray-400 rounded transition-all duration-500"
-                        style={{ width: `${(medicalStats.stableCount / medicalStats.totalGroups) * 100}%` }}
+                        style={{ width: `${(medicalStats.noPolarization / medicalStats.totalGroups) * 100}%` }}
                       />
                       <span className="text-sm font-medium whitespace-nowrap">
-                        {((medicalStats.stableCount / medicalStats.totalGroups) * 100).toFixed(0)}%
+                        {((medicalStats.noPolarization / medicalStats.totalGroups) * 100).toFixed(0)}% יציב
                       </span>
                     </div>
                   )}
@@ -553,36 +547,50 @@ const ClassSummary: React.FC<{
               
               <div className="mt-4 pt-4 border-t border-purple-200 text-center">
                 <p className="text-sm text-gray-700">
-                  <strong>תוצאה צפויה:</strong> רוב הקבוצות צפויות להחליט על בחירה <strong className="text-green-600">בטוחה יותר</strong>
+                  <strong>קיטוב צפוי:</strong> קבוצות נוטות להחליט על <strong className="text-green-600">זהירות גבוהה יותר</strong> מהממוצע האישי
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Overall Summary */}
         <div className="mt-8 p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg">
           <h3 className="text-xl font-bold text-center mb-4">מסקנות כלליות</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-sm text-gray-600">סך קבוצות שפולריזו</p>
+              <p className="text-sm text-gray-600">סך קבוצות שהראו קיטוב</p>
               <p className="text-3xl font-bold text-indigo-600">
-                {chessStats.riskierCount + chessStats.saferCount + medicalStats.riskierCount + medicalStats.saferCount}
+                {chessStats.polarizedTowardsRisk + chessStats.polarizedTowardsCaution + 
+                 medicalStats.polarizedTowardsRisk + medicalStats.polarizedTowardsCaution}
+              </p>
+              <p className="text-xs text-gray-500">
+                מתוך {chessStats.totalGroups + medicalStats.totalGroups} החלטות קבוצתיות
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">אחוז פולריזציה כללי</p>
+              <p className="text-sm text-gray-600">אחוז קיטוב כללי</p>
               <p className="text-3xl font-bold text-indigo-600">
-                {(((chessStats.riskierCount + chessStats.saferCount + medicalStats.riskierCount + medicalStats.saferCount) / 
-                   (chessStats.totalGroups + medicalStats.totalGroups)) * 100).toFixed(0)}%
+                {Math.round(((chessStats.polarizedTowardsRisk + chessStats.polarizedTowardsCaution + 
+                             medicalStats.polarizedTowardsRisk + medicalStats.polarizedTowardsCaution) / 
+                            (chessStats.totalGroups + medicalStats.totalGroups)) * 100)}%
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">קבוצות שהראו דפוס צפוי</p>
+              <p className="text-sm text-gray-600">קיטוב בכיוון הצפוי</p>
               <p className="text-3xl font-bold text-green-600">
-                {chessStats.riskierCount + medicalStats.saferCount}
+                {chessStats.polarizedTowardsRisk + medicalStats.polarizedTowardsCaution}
+              </p>
+              <p className="text-xs text-gray-500">
+                שחמט→סיכון, רפואי→זהירות
               </p>
             </div>
+          </div>
+          
+          <div className="mt-4 pt-4 border-t border-indigo-200">
+            <p className="text-center text-sm text-gray-700">
+              <strong>הסבר:</strong> קיטוב קבוצתי מתרחש כאשר החלטת הקבוצה נמצאת בקצה יותר מהממוצע האישי של חבריה.
+              בתרחיש השחמט, קבוצות נוטות לקיטוב לכיוון סיכון. בתרחיש הרפואי, קבוצות נוטות לקיטוב לכיוון זהירות.
+            </p>
           </div>
         </div>
       </Card>
@@ -598,7 +606,7 @@ const StudentView: React.FC<{
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50" dir="rtl">
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">כלי לימודי לפולריזציה קבוצתית</h1>
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">כלי לימודי לקיטוב קבוצתי</h1>
         <p className="text-gray-600">תצוגת סטודנט</p>
         <div className="mt-4 inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">
           שלב נוכחי: {PHASE_NAMES[state.phase]}
@@ -623,6 +631,7 @@ const StudentView: React.FC<{
     </div>
   );
 };
+
 // ============= PROFESSOR VIEW =============
 const ProfessorDashboard: React.FC<{
   state: AppState;
@@ -808,7 +817,7 @@ const ProfessorDashboard: React.FC<{
             
             return (
               <Card key={scenarioId}>
-                <h3 className="text-2xl font-bold mb-6">{scenario.title} - ניתוח</h3>
+                <h3 className="text-2xl font-bold mb-6">{scenario.title} - ניתוח קיטוב</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {state.groups.map(group => {
@@ -823,18 +832,18 @@ const ProfessorDashboard: React.FC<{
                     if (!group.consensus[scenarioId as ScenarioID]) return null;
 
                     return (
-                      <Card key={group.id} className={isPolarized ? 'border-2 border-red-500' : ''}>
+                      <Card key={group.id} className={isPolarized ? 'border-2 border-orange-500' : 'border-2 border-gray-200'}>
                         <h4 className="font-bold mb-3">{group.name}</h4>
                         
                         <div className="mb-4">
                           <div className="flex justify-between text-sm mb-2">
-                            <span>ממוצע: {individualMean.toFixed(2)}</span>
-                            <span>קונצנזוס: {groupConsensus.toFixed(2)}</span>
+                            <span>ממוצע אישי: {individualMean.toFixed(1)}</span>
+                            <span>קונצנזוס: {groupConsensus.toFixed(1)}</span>
                           </div>
                           
                           <div className="relative h-12 bg-gray-200 rounded">
                             <div 
-                              className="absolute h-full bg-blue-400 rounded"
+                              className="absolute h-full bg-blue-400 rounded opacity-70"
                               style={{ width: `${(individualMean / 10) * 100}%` }}
                             />
                             <div 
@@ -842,14 +851,38 @@ const ProfessorDashboard: React.FC<{
                               style={{ width: `${(groupConsensus / 10) * 100}%` }}
                             />
                           </div>
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>🔵 ממוצע אישי</span>
+                            <span>🔴 החלטת קבוצה</span>
+                          </div>
                         </div>
 
                         <div className="space-y-1 text-sm">
-                          <p>שינוי: <span className={shift > 0 ? 'text-red-600 font-bold' : 'text-blue-600 font-bold'}>
-                            {shift > 0 ? '+' : ''}{shift.toFixed(2)}
+                          <p>שינוי: <span className={shift > 0 ? 'text-red-600 font-bold' : shift < 0 ? 'text-green-600 font-bold' : 'text-gray-600'}>
+                            {shift > 0 ? '+' : ''}{shift.toFixed(1)}
                           </span></p>
-                          <p>כיוון: {shift > 0.3 ? '↑ מחפש סיכון' : shift < -0.3 ? '↓ נמנע מסיכון' : 'יציב'}</p>
-                          {isPolarized && <p className="text-red-600">⚠️ פולריזציה</p>}
+                          
+                          <p className={isPolarized ? 'font-bold' : ''}>
+                            {isPolarized ? (
+                              shift > 0.5 ? (
+                                <span className="text-red-600">🔥 קיטוב לכיוון סיכון</span>
+                              ) : (
+                                <span className="text-green-600">🛡️ קיטוב לכיוון זהירות</span>
+                              )
+                            ) : (
+                              <span className="text-gray-600">😐 ללא קיטוב משמעותי</span>
+                            )}
+                          </p>
+                          
+                          {isPolarized && (
+                            <p className="text-xs">
+                              {((scenarioId === 'chess' && shift > 0) || (scenarioId === 'medical' && shift < 0)) ? (
+                                <span className="text-blue-600">✓ כיוון צפוי</span>
+                              ) : (
+                                <span className="text-orange-600">⚠ כיוון לא צפוי</span>
+                              )}
+                            </p>
+                          )}
                         </div>
 
                         <div className="mt-3 pt-3 border-t">
@@ -869,10 +902,10 @@ const ProfessorDashboard: React.FC<{
 
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                   <h4 className="font-bold mb-2">סיכום - {scenario.title}</h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">קבוצות שפולריזו:</p>
-                      <p className="text-xl font-bold text-red-600">
+                      <p className="text-gray-600">קבוצות עם קיטוב:</p>
+                      <p className="text-xl font-bold text-orange-600">
                         {state.groups.filter(g => {
                           const groupResponses = responses.filter(r => g.memberIds.includes(r.studentId));
                           const mean = groupResponses.length > 0 ? groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length : 0;
@@ -882,23 +915,9 @@ const ProfessorDashboard: React.FC<{
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-600">שינוי ממוצע:</p>
-                      <p className="text-xl font-bold">
-                        {(() => {
-                          const shifts = state.groups.map(g => {
-                            const groupResponses = responses.filter(r => g.memberIds.includes(r.studentId));
-                            const mean = groupResponses.length > 0 ? groupResponses.reduce((sum, r) => sum + r.threshold, 0) / groupResponses.length : 0;
-                            return (g.consensus[scenarioId as ScenarioID]?.threshold || 0) - mean;
-                          });
-                          const avgShift = shifts.reduce((a, b) => a + b, 0) / shifts.length;
-                          return avgShift > 0 ? `↑ ${avgShift.toFixed(2)}` : `↓ ${Math.abs(avgShift).toFixed(2)}`;
-                        })()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">דפוס צפוי:</p>
+                      <p className="text-gray-600">כיוון קיטוב צפוי:</p>
                       <p className="text-sm">
-                        {scenarioId === 'chess' ? '↑ גבוה יותר' : '↓ נמוך יותר'}
+                        {scenarioId === 'chess' ? '🔴 לכיוון סיכון (>ממוצע)' : '🟢 לכיוון זהירות (<ממוצע)'}
                       </p>
                     </div>
                   </div>
@@ -946,4 +965,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;  // ← Make sure this line is there!
+export default App;
