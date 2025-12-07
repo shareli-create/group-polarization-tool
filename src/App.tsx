@@ -583,7 +583,8 @@ const StudentView: React.FC<{
   );
 };
 
-// ============= PROFESSOR VIEW =============
+
+// ============= PROFESSOR VIEW - IMPROVED =============
 const ProfessorDashboard: React.FC<{
   state: AppState;
   onStateChange: (state: AppState) => void;
@@ -686,154 +687,383 @@ const ProfessorDashboard: React.FC<{
     }
   };
 
+  // Calculate stats
+  const totalGroups = state.groups.length;
+  const completedGroups = state.groups.filter(g => 
+    g.consensus[ScenarioID.CHESS] && g.consensus[ScenarioID.MEDICAL]
+  ).length;
+
+  // Phase configuration
+  const phases = [
+    {
+      phase: Phase.INDIVIDUAL_INPUT,
+      number: 1,
+      icon: '📝',
+      title: 'קלט אישי',
+      description: 'סטודנטים שולחים החלטות אישיות',
+      canProceed: allStudents.length >= 2,
+      status: allStudents.length >= 2 ? 'מוכן להמשיך' : `צריך לפחות 2 סטודנטים (${allStudents.length} עד כה)`
+    },
+    {
+      phase: Phase.GROUP_FORMATION,
+      number: 2,
+      icon: '👥',
+      title: 'הקמת קבוצות',
+      description: 'חלק סטודנטים לקבוצות',
+      canProceed: totalGroups > 0,
+      status: totalGroups === 0 ? 'צור קבוצות כדי להמשיך' : `${totalGroups} קבוצות נוצרו`
+    },
+    {
+      phase: Phase.GROUP_DELIBERATION,
+      number: 3,
+      icon: '💬',
+      title: 'דיון קבוצתי',
+      description: 'קבוצות מגיעות לקונצנזוס',
+      canProceed: true,
+      status: `${completedGroups}/${totalGroups} קבוצות השלימו`
+    },
+    {
+      phase: Phase.RESULTS_DEBRIEF,
+      number: 4,
+      icon: '📊',
+      title: 'תוצאות וניתוח',
+      description: 'צפייה וניתוח תוצאות',
+      canProceed: true,
+      status: 'ניתוח זמין'
+    }
+  ];
+
+  const currentPhaseIndex = phases.findIndex(p => p.phase === state.phase);
+  const currentPhaseConfig = phases[currentPhaseIndex];
+
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen" dir="rtl">
-      <h1 className="text-3xl font-bold mb-6">לוח בקרה למרצה</h1>
-
-      <Card className="mb-6">
-        <h2 className="text-xl font-bold mb-4">בקרת התרגיל</h2>
-        <div className="flex items-center gap-4 mb-4">
-          <span className="font-medium">שלב נוכחי:</span>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full">
-            {PHASE_NAMES[state.phase]}
-          </span>
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <h1 className="text-3xl font-bold text-gray-900">לוח בקרה למרצה</h1>
+          <p className="text-gray-600">עקוב אחר התקדמות הסטודנטים ונהל את התרגיל</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => onStateChange({ ...state, phase: Phase.INDIVIDUAL_INPUT })}>
-            שלב 1
-          </Button>
-          <Button onClick={() => onStateChange({ ...state, phase: Phase.GROUP_FORMATION })}>
-            שלב 2
-          </Button>
-          <Button onClick={() => onStateChange({ ...state, phase: Phase.GROUP_DELIBERATION })}>
-            שלב 3
-          </Button>
-          <Button onClick={() => onStateChange({ ...state, phase: Phase.RESULTS_DEBRIEF })}>
-            שלב 4
-          </Button>
-          <Button variant="danger" onClick={handleRestart}>
-            התחל מחדש
-          </Button>
-          <Button variant="secondary" onClick={simulateResults}>
-            הדמיית 5 קבוצות
-          </Button>
-        </div>
-      </Card>
-
-      <div className="border-b mb-6">
-        <nav className="flex space-x-reverse space-x-8">
-          {(['overview', 'responses', 'groups', 'analysis', 'summary'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-4 px-1 border-b-2 font-medium ${
-                activeTab === tab ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500'
-              }`}
-            >
-              {tab === 'overview' ? 'סקירה' : 
-               tab === 'responses' ? 'תשובות' : 
-               tab === 'groups' ? 'קבוצות' : 
-               tab === 'analysis' ? 'ניתוח' : 
-               'סיכום כיתתי'}
-            </button>
-          ))}
-        </nav>
       </div>
 
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-3 gap-6">
-          <Card>
-            <h3 className="text-lg font-semibold mb-2">סטודנטים</h3>
-            <p className="text-3xl font-bold text-blue-600">{allStudents.length}</p>
-          </Card>
-          <Card>
-            <h3 className="text-lg font-semibold mb-2">קבוצות</h3>
-            <p className="text-3xl font-bold text-green-600">{state.groups.length}</p>
-          </Card>
-          <Card>
-            <h3 className="text-lg font-semibold mb-2">השלמה</h3>
-            <p className="text-3xl font-bold text-purple-600">
-              {state.groups.filter(g => g.consensus[ScenarioID.CHESS] && g.consensus[ScenarioID.MEDICAL]).length}
-            </p>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'responses' && (
-        <div className="space-y-6">
-          {Object.entries(SCENARIOS).map(([scenarioId, scenario]) => (
-            <Card key={scenarioId}>
-              <h3 className="text-xl font-bold mb-4">{scenario.title}</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">מזהה</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">סף</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">הצדקה</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {(scenarioId === 'chess' ? state.chessResponses : state.medicalResponses).map(response => (
-                      <tr key={response.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {response.studentId}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {response.threshold}
-                        </td>
-                        <td className="px-6 py-4 text-sm">
-                          {response.justification}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {activeTab === 'groups' && (
-        <div className="space-y-6">
-          <Card>
-            <div className="flex justify-between mb-4">
-              <h3 className="text-xl font-bold">ניהול קבוצות</h3>
-              <div className="flex gap-2">
-                <Button onClick={() => createAutoGroups(3)}>יצירה אוטומטית (3)</Button>
-                <Button onClick={() => createAutoGroups(4)}>יצירה אוטומטית (4)</Button>
-                <Button onClick={() => createAutoGroups(5)}>יצירה אוטומטית (5)</Button>
-              </div>
-            </div>
-          </Card>
-
-          <div className="grid grid-cols-3 gap-4">
-            {state.groups.map(group => (
-              <Card key={group.id}>
-                <h4 className="font-bold mb-2">{group.name}</h4>
-                <p className="text-sm text-gray-600">חברים: {group.memberIds.join(', ')}</p>
-                <div className="mt-2 space-y-1">
-                  <p className="text-xs">
-                    שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
-                  </p>
-                  <p className="text-xs">
-                    רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
-                  </p>
-                </div>
-              </Card>
-            ))}
+      {/* Stage Progress Indicator - Sticky */}
+      <div className="sticky top-0 z-50 bg-white shadow-md border-b-4 border-blue-500">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between gap-2">
+            {phases.map((phaseConfig, index) => {
+              const isActive = phaseConfig.phase === state.phase;
+              const isCompleted = index < currentPhaseIndex;
+              const isAccessible = index <= currentPhaseIndex || phaseConfig.canProceed;
+              
+              return (
+                <React.Fragment key={phaseConfig.phase}>
+                  {/* Stage Box */}
+                  <button
+                    onClick={() => {
+                      if (isAccessible || index < currentPhaseIndex) {
+                        onStateChange({ ...state, phase: phaseConfig.phase });
+                      }
+                    }}
+                    disabled={!isAccessible && index > currentPhaseIndex}
+                    className={`
+                      flex-1 p-4 rounded-lg border-2 transition-all duration-300
+                      ${isActive 
+                        ? 'bg-blue-50 border-blue-500 shadow-lg scale-105' 
+                        : isCompleted
+                        ? 'bg-green-50 border-green-500 hover:shadow-md'
+                        : isAccessible
+                        ? 'bg-gray-50 border-gray-300 hover:border-gray-400 hover:shadow-md'
+                        : 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      {/* Stage Number */}
+                      <div className={`
+                        w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg
+                        ${isActive 
+                          ? 'bg-blue-500 text-white' 
+                          : isCompleted
+                          ? 'bg-green-500 text-white'
+                          : isAccessible
+                          ? 'bg-gray-300 text-gray-700'
+                          : 'bg-gray-200 text-gray-400'
+                        }
+                      `}>
+                        {isCompleted ? '✓' : phaseConfig.number}
+                      </div>
+                      
+                      {/* Icon */}
+                      <span className="text-2xl">{phaseConfig.icon}</span>
+                      
+                      {/* Title */}
+                      <div className="flex-1 text-right">
+                        <div className={`font-bold ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
+                          {phaseConfig.title}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {phaseConfig.description}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Status */}
+                    {isActive && (
+                      <div className="text-xs mt-2">
+                        <span className={`
+                          inline-block px-2 py-1 rounded-full
+                          ${phaseConfig.canProceed 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                          }
+                        `}>
+                          {phaseConfig.status}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                  
+                  {/* Arrow */}
+                  {index < phases.length - 1 && (
+                    <div className="text-2xl text-gray-400">←</div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="mt-4 flex gap-3 justify-center flex-wrap">
+            {currentPhaseIndex < phases.length - 1 && currentPhaseConfig.canProceed && (
+              <Button
+                onClick={() => {
+                  const nextPhase = phases[currentPhaseIndex + 1];
+                  if (nextPhase) {
+                    onStateChange({ ...state, phase: nextPhase.phase });
+                  }
+                }}
+                className="px-8 py-3 text-lg"
+              >
+                ➡️ המשך ל{phases[currentPhaseIndex + 1]?.title}
+              </Button>
+            )}
+            
+            <Button variant="danger" onClick={handleRestart} className="px-6 py-3">
+              🔄 התחל מחדש
+            </Button>
+            
+            <Button variant="secondary" onClick={simulateResults} className="px-6 py-3">
+              🧪 הדמיית 5 קבוצות
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
-      {activeTab === 'analysis' && (
-        <GroupResultsAnalysis state={state} />
-      )}
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="border-r-4 border-blue-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-600 text-sm">סה״כ משתתפים</div>
+                <div className="text-3xl font-bold text-blue-600">{allStudents.length}</div>
+              </div>
+              <div className="text-4xl">👥</div>
+            </div>
+          </Card>
+          
+          <Card className="border-r-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-600 text-sm">קבוצות שהוקמו</div>
+                <div className="text-3xl font-bold text-green-600">{totalGroups}</div>
+              </div>
+              <div className="text-4xl">🎯</div>
+            </div>
+          </Card>
+          
+          <Card className="border-r-4 border-purple-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-gray-600 text-sm">קבוצות שהשלימו</div>
+                <div className="text-3xl font-bold text-purple-600">{completedGroups}/{totalGroups}</div>
+              </div>
+              <div className="text-4xl">✅</div>
+            </div>
+          </Card>
+        </div>
 
-      {activeTab === 'summary' && (
-        <ClassSummaryTable state={state} />
-      )}
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="flex border-b">
+            {[
+              { id: 'overview', label: 'סקירה', icon: '📋' },
+              { id: 'responses', label: 'תשובות', icon: '📝' },
+              { id: 'groups', label: 'קבוצות', icon: '👥' },
+              { id: 'analysis', label: 'ניתוח', icon: '📊' },
+              { id: 'summary', label: 'סיכום כיתתי', icon: '📈' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`
+                  flex-1 px-6 py-4 font-semibold transition-colors
+                  ${activeTab === tab.id
+                    ? 'text-blue-600 border-b-4 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <span className="ml-2">{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="p-6">
+            {activeTab === 'overview' && (
+              <div className="space-y-6">
+                {/* Phase Guidance */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                  <h3 className="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <span className="text-3xl">{currentPhaseConfig.icon}</span>
+                    שלב נוכחי: {currentPhaseConfig.title}
+                  </h3>
+                  <p className="text-gray-700 mb-3">{currentPhaseConfig.description}</p>
+                  <div className="bg-white rounded p-3 inline-block">
+                    <span className="font-semibold">סטטוס:</span> {currentPhaseConfig.status}
+                  </div>
+                </div>
+
+                {/* Phase-specific guidance */}
+                {state.phase === Phase.INDIVIDUAL_INPUT && (
+                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li>• שתף את קישור הסטודנטים עם הכיתה</li>
+                      <li>• המתן שהסטודנטים ישלחו את התשובות האישיות שלהם</li>
+                      <li>• מינימום 2 סטודנטים נדרשים להמשיך</li>
+                      <li>• סטודנטים נוכחיים: <strong>{allStudents.length}</strong></li>
+                    </ul>
+                  </div>
+                )}
+
+                {state.phase === Phase.GROUP_FORMATION && (
+                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li>• עבור לטאב "קבוצות" כדי לצור קבוצות</li>
+                      <li>• השתמש ביצירה אוטומטית או הקצה סטודנטים ידנית</li>
+                      <li>• גודל קבוצה מומלץ: 3-5 סטודנטים</li>
+                      <li>• לאחר יצירת הקבוצות, עבור לשלב 3</li>
+                    </ul>
+                  </div>
+                )}
+
+                {state.phase === Phase.GROUP_DELIBERATION && (
+                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li>• הקבוצות כעת דנות ומגיעות לקונצנזוס</li>
+                      <li>• עקוב אחר התקדמות בטאב "קבוצות"</li>
+                      <li>• קבוצות שהשלימו: <strong>{completedGroups}/{totalGroups}</strong></li>
+                      <li>• כשמספיק קבוצות סיימו, עבור לתוצאות</li>
+                    </ul>
+                  </div>
+                )}
+
+                {state.phase === Phase.RESULTS_DEBRIEF && (
+                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <h4 className="font-bold text-green-900 mb-3">💡 התרגיל הסתיים!</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li>• צפה בניתוח מפורט בטאב "ניתוח"</li>
+                      <li>• דון בתוצאות עם הכיתה</li>
+                      <li>• הסבר את דפוסי הפולריזציה שזוהו</li>
+                      <li>• ניתן להתחיל תרגיל חדש עם כפתור "התחל מחדש"</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'responses' && (
+              <div className="space-y-6">
+                <h3 className="text-2xl font-bold mb-4">תשובות אישיות</h3>
+                {[ScenarioID.CHESS, ScenarioID.MEDICAL].map(scenarioId => {
+                  const responses = scenarioId === ScenarioID.CHESS ? state.chessResponses : state.medicalResponses;
+                  return (
+                    <Card key={scenarioId}>
+                      <h4 className="font-bold text-xl mb-4">{SCENARIOS[scenarioId].title}</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-right p-2">סטודנט</th>
+                              <th className="text-center p-2">סף</th>
+                              <th className="text-right p-2">הצדקה</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {responses.map(r => (
+                              <tr key={r.id} className="border-b">
+                                <td className="p-2">{r.studentId}</td>
+                                <td className="text-center p-2 font-bold">{r.threshold}</td>
+                                <td className="p-2 text-sm text-gray-600">{r.justification}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === 'groups' && (
+              <div className="space-y-4">
+                <Card>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold">ניהול קבוצות</h3>
+                    <div className="flex gap-2">
+                      <Button onClick={() => createAutoGroups(3)}>יצירה אוטומטית (3)</Button>
+                      <Button onClick={() => createAutoGroups(4)}>יצירה אוטומטית (4)</Button>
+                      <Button onClick={() => createAutoGroups(5)}>יצירה אוטומטית (5)</Button>
+                    </div>
+                  </div>
+                </Card>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {state.groups.map(group => (
+                    <Card key={group.id}>
+                      <h4 className="font-bold mb-2">{group.name}</h4>
+                      <p className="text-sm text-gray-600">חברים: {group.memberIds.join(', ')}</p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs">
+                          שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
+                        </p>
+                        <p className="text-xs">
+                          רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'analysis' && (
+              <GroupResultsAnalysis state={state} />
+            )}
+
+            {activeTab === 'summary' && (
+              <ClassSummaryTable state={state} />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
