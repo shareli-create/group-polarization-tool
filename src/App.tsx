@@ -598,17 +598,30 @@ const ProfessorDashboard: React.FC<{
     return Array.from(ids);
   }, [state]);
 
-  const createAutoGroups = (size: number) => {
+  // Smart auto-grouping that balances sizes to avoid small remainders
+  const createAutoGroups = (targetSize: number) => {
+    const totalStudents = allStudents.length;
+    if (totalStudents === 0) return;
+    
     const shuffled = [...allStudents].sort(() => Math.random() - 0.5);
     const newGroups: Group[] = [];
     
-    for (let i = 0; i < shuffled.length; i += size) {
+    // Calculate optimal distribution
+    const numGroups = Math.ceil(totalStudents / targetSize);
+    const baseSize = Math.floor(totalStudents / numGroups);
+    const remainder = totalStudents % numGroups;
+    
+    // Distribute students: some groups get baseSize+1, others get baseSize
+    let currentIndex = 0;
+    for (let i = 0; i < numGroups; i++) {
+      const groupSize = i < remainder ? baseSize + 1 : baseSize;
       newGroups.push({
         id: crypto.randomUUID(),
-        name: `קבוצה ${newGroups.length + 1}`,
-        memberIds: shuffled.slice(i, i + size),
+        name: `קבוצה ${i + 1}`,
+        memberIds: shuffled.slice(currentIndex, currentIndex + groupSize),
         consensus: {}
       });
+      currentIndex += groupSize;
     }
     
     onStateChange({ ...state, groups: newGroups });
@@ -834,18 +847,34 @@ const ProfessorDashboard: React.FC<{
           
           {/* Action Buttons */}
           <div className="mt-4 flex gap-3 justify-center flex-wrap">
-            {currentPhaseIndex < phases.length - 1 && currentPhaseConfig.canProceed && (
-              <Button
-                onClick={() => {
-                  const nextPhase = phases[currentPhaseIndex + 1];
-                  if (nextPhase) {
-                    onStateChange({ ...state, phase: nextPhase.phase });
-                  }
-                }}
-                className="px-8 py-3 text-lg"
-              >
-                ➡️ המשך ל{phases[currentPhaseIndex + 1]?.title}
-              </Button>
+            {currentPhaseIndex < phases.length - 1 && (
+              <div className="flex flex-col items-center gap-2 w-full">
+                {currentPhaseConfig.canProceed ? (
+                  <>
+                    <Button
+                      onClick={() => {
+                        const nextPhase = phases[currentPhaseIndex + 1];
+                        if (nextPhase) {
+                          onStateChange({ ...state, phase: nextPhase.phase });
+                        }
+                      }}
+                      className="px-8 py-3 text-lg"
+                    >
+                      ➡️ סיים "{currentPhaseConfig.title}" ← התחל "{phases[currentPhaseIndex + 1]?.title}"
+                    </Button>
+                    <div className="text-xs text-gray-600 bg-white px-3 py-1 rounded">
+                      {state.phase === Phase.INDIVIDUAL_INPUT && `הסטודנטים יוכלו לראות שהם משובצים לקבוצות`}
+                      {state.phase === Phase.GROUP_FORMATION && `הסטודנטים יתחילו דיון קבוצתי`}
+                      {state.phase === Phase.GROUP_DELIBERATION && `הסטודנטים יוכלו לראות את התוצאות`}
+                    </div>
+                  </>
+                ) : (
+                  <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg px-6 py-3 text-center">
+                    <div className="font-bold text-yellow-800">⚠️ לא ניתן להמשיך עדיין</div>
+                    <div className="text-sm text-yellow-700 mt-1">{phaseConfig.status}</div>
+                  </div>
+                )}
+              </div>
             )}
             
             <Button variant="danger" onClick={handleRestart} className="px-6 py-3">
@@ -939,51 +968,116 @@ const ProfessorDashboard: React.FC<{
 
                 {/* Phase-specific guidance */}
                 {state.phase === Phase.INDIVIDUAL_INPUT && (
-                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• שתף את קישור הסטודנטים עם הכיתה</li>
-                      <li>• המתן שהסטודנטים ישלחו את התשובות האישיות שלהם</li>
-                      <li>• מינימום 2 סטודנטים נדרשים להמשיך</li>
-                      <li>• סטודנטים נוכחיים: <strong>{allStudents.length}</strong></li>
-                    </ul>
-                  </div>
+                  <>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <ul className="space-y-2 text-gray-700">
+                        <li>• שתף את קישור הסטודנטים עם הכיתה</li>
+                        <li>• המתן שהסטודנטים ישלחו את התשובות האישיות שלהם</li>
+                        <li>• מינימום 2 סטודנטים נדרשים להמשיך</li>
+                        <li>• סטודנטים נוכחיים: <strong>{allStudents.length}</strong></li>
+                      </ul>
+                    </div>
+                    
+                    {/* Student View Preview */}
+                    <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                      <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                      </h4>
+                      <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
+                        <h5 className="font-bold text-lg mb-2">הערכה אישית</h5>
+                        <p className="text-gray-700 text-sm">הסטודנטים רואים את שני התרחישים ומזינים את התשובות האישיות שלהם (סף + הצדקה)</p>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {state.phase === Phase.GROUP_FORMATION && (
-                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• עבור לטאב "קבוצות" כדי לצור קבוצות</li>
-                      <li>• השתמש ביצירה אוטומטית או הקצה סטודנטים ידנית</li>
-                      <li>• גודל קבוצה מומלץ: 3-5 סטודנטים</li>
-                      <li>• לאחר יצירת הקבוצות, עבור לשלב 3</li>
-                    </ul>
-                  </div>
+                  <>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <ul className="space-y-2 text-gray-700">
+                        <li>• עבור לטאב "קבוצות" כדי לצור קבוצות</li>
+                        <li>• השתמש ביצירה אוטומטית או הקצה סטודנטים ידנית</li>
+                        <li>• גודל קבוצה מומלץ: 3-5 סטודנטים</li>
+                        <li>• לאחר יצירת הקבוצות, עבור לשלב 3</li>
+                      </ul>
+                    </div>
+                    
+                    {/* Student View Preview */}
+                    <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                      <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                      </h4>
+                      <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
+                        <h5 className="font-bold text-lg mb-2">ממתין לשיבוץ קבוצתי</h5>
+                        <p className="text-gray-700 text-sm">הסטודנטים רואים הודעה: "תשובותיך נשמרו. ממתין שהמרצה יחלק לקבוצות..."</p>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {state.phase === Phase.GROUP_DELIBERATION && (
-                  <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                    <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• הקבוצות כעת דנות ומגיעות לקונצנזוס</li>
-                      <li>• עקוב אחר התקדמות בטאב "קבוצות"</li>
-                      <li>• קבוצות שהשלימו: <strong>{completedGroups}/{totalGroups}</strong></li>
-                      <li>• כשמספיק קבוצות סיימו, עבור לתוצאות</li>
-                    </ul>
-                  </div>
+                  <>
+                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <ul className="space-y-2 text-gray-700">
+                        <li>• הקבוצות כעת דנות ומגיעות לקונצנזוס</li>
+                        <li>• עקוב אחר התקדמות בטאב "קבוצות"</li>
+                        <li>• קבוצות שהשלימו: <strong>{completedGroups}/{totalGroups}</strong></li>
+                        <li>• כשמספיק קבוצות סיימו, עבור לתוצאות</li>
+                      </ul>
+                    </div>
+                    
+                    {/* Student View Preview */}
+                    <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                      <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                      </h4>
+                      <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
+                        <h5 className="font-bold text-lg mb-2">דיון קבוצתי</h5>
+                        <p className="text-gray-700 text-sm mb-2">הסטודנטים רואים:</p>
+                        <ul className="text-sm text-gray-700 list-disc list-inside">
+                          <li>את התשובות האישיות של כל חברי הקבוצה</li>
+                          <li>טופס להזנת קונצנזוס קבוצתי (סף + הצדקה משותפת)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {state.phase === Phase.RESULTS_DEBRIEF && (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
-                    <h4 className="font-bold text-green-900 mb-3">💡 התרגיל הסתיים!</h4>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• צפה בניתוח מפורט בטאב "ניתוח"</li>
-                      <li>• דון בתוצאות עם הכיתה</li>
-                      <li>• הסבר את דפוסי הפולריזציה שזוהו</li>
-                      <li>• ניתן להתחיל תרגיל חדש עם כפתור "התחל מחדש"</li>
-                    </ul>
-                  </div>
+                  <>
+                    <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                      <h4 className="font-bold text-green-900 mb-3">💡 התרגיל הסתיים!</h4>
+                      <ul className="space-y-2 text-gray-700">
+                        <li>• צפה בניתוח מפורט בטאב "ניתוח"</li>
+                        <li>• דון בתוצאות עם הכיתה</li>
+                        <li>• הסבר את דפוסי הפולריזציה שזוהו</li>
+                        <li>• ניתן להתחיל תרגיל חדש עם כפתור "התחל מחדש"</li>
+                      </ul>
+                    </div>
+                    
+                    {/* Student View Preview */}
+                    <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                      <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                      </h4>
+                      <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
+                        <h5 className="font-bold text-lg mb-2">תוצאות וניתוח</h5>
+                        <p className="text-gray-700 text-sm mb-2">הסטודנטים רואים:</p>
+                        <ul className="text-sm text-gray-700 list-disc list-inside">
+                          <li>השוואה בין התשובה האישית לקונצנזוס הקבוצתי שלהם</li>
+                          <li>היסטוגרמות המראות את התפלגות התשובות</li>
+                          <li>ניתוח של מגמות הפולריזציה</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -1025,32 +1119,73 @@ const ProfessorDashboard: React.FC<{
             {activeTab === 'groups' && (
               <div className="space-y-4">
                 <Card>
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold">ניהול קבוצות</h3>
-                    <div className="flex gap-2">
-                      <Button onClick={() => createAutoGroups(3)}>יצירה אוטומטית (3)</Button>
-                      <Button onClick={() => createAutoGroups(4)}>יצירה אוטומטית (4)</Button>
-                      <Button onClick={() => createAutoGroups(5)}>יצירה אוטומטית (5)</Button>
+                  <h3 className="text-xl font-bold mb-4">ניהול קבוצות</h3>
+                  
+                  {/* Auto-grouping with preview */}
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                    <h4 className="font-semibold mb-3">חלוקה אוטומטית לקבוצות</h4>
+                    <p className="text-sm text-gray-600 mb-3">
+                      סה"כ {allStudents.length} סטודנטים. בחר גודל קבוצה מועדף:
+                    </p>
+                    
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      {[3, 4, 5].map(targetSize => {
+                        const totalStudents = allStudents.length;
+                        if (totalStudents === 0) return null;
+                        
+                        const numGroups = Math.ceil(totalStudents / targetSize);
+                        const baseSize = Math.floor(totalStudents / numGroups);
+                        const remainder = totalStudents % numGroups;
+                        
+                        // Calculate how many groups of each size
+                        const largerGroups = remainder;
+                        const smallerGroups = numGroups - remainder;
+                        
+                        return (
+                          <button
+                            key={targetSize}
+                            onClick={() => createAutoGroups(targetSize)}
+                            className="bg-white border-2 border-blue-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg p-3 transition-all text-right"
+                          >
+                            <div className="font-bold text-blue-700 mb-1">גודל מועדף: {targetSize}</div>
+                            <div className="text-xs text-gray-600">
+                              תוצאה: {numGroups} קבוצות
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {largerGroups > 0 && `${largerGroups}×${baseSize + 1}`}
+                              {largerGroups > 0 && smallerGroups > 0 && ', '}
+                              {smallerGroups > 0 && `${smallerGroups}×${baseSize}`}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                      💡 האלגוריתם מחלק באופן שווה ככל האפשר כדי למנוע קבוצות קטנות מדי
                     </div>
                   </div>
                 </Card>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {state.groups.map(group => (
-                    <Card key={group.id}>
-                      <h4 className="font-bold mb-2">{group.name}</h4>
-                      <p className="text-sm text-gray-600">חברים: {group.memberIds.join(', ')}</p>
-                      <div className="mt-2 space-y-1">
-                        <p className="text-xs">
-                          שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
-                        </p>
-                        <p className="text-xs">
-                          רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
-                        </p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                {/* Groups display */}
+                {state.groups.length > 0 && (
+                  <div className="grid grid-cols-3 gap-4">
+                    {state.groups.map(group => (
+                      <Card key={group.id}>
+                        <h4 className="font-bold mb-2">{group.name}</h4>
+                        <p className="text-sm text-gray-600">חברים ({group.memberIds.length}): {group.memberIds.join(', ')}</p>
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs">
+                            שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
+                          </p>
+                          <p className="text-xs">
+                            רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
+                          </p>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
