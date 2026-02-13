@@ -871,7 +871,7 @@ const ProfessorDashboard: React.FC<{
                 ) : (
                   <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg px-6 py-3 text-center">
                     <div className="font-bold text-yellow-800">⚠️ לא ניתן להמשיך עדיין</div>
-                    <div className="text-sm text-yellow-700 mt-1">{phaseConfig.status}</div>
+                    <div className="text-sm text-yellow-700 mt-1">{currentPhaseConfig.status}</div>
                   </div>
                 )}
               </div>
