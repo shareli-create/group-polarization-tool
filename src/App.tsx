@@ -462,9 +462,10 @@ const ClassSummaryTable: React.FC<{
       if (Math.abs(difference) <= 0.3) {
         close++;
       } else if (difference > 0.3) {
-        riskier++;
-      } else {
+        // סף גבוה מהממוצע = דרישה לסיכוי הצלחה גבוה יותר = החלטה בטוחה יותר
         safer++;
+      } else {
+        riskier++;
       }
     });
     
@@ -496,7 +497,7 @@ const ClassSummaryTable: React.FC<{
                 <th className="border border-gray-300 px-6 py-4 text-right font-bold">תרחיש</th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
                   בטוח יותר מהממוצע<br/>
-                  <span className="text-sm font-normal">(הפרש &lt; -0.3)</span>
+                  <span className="text-sm font-normal">(הפרש &gt; +0.3)</span>
                 </th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
                   קרוב לממוצע<br/>
@@ -504,7 +505,7 @@ const ClassSummaryTable: React.FC<{
                 </th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
                   מסוכן יותר מהממוצע<br/>
-                  <span className="text-sm font-normal">(הפרש &gt; +0.3)</span>
+                  <span className="text-sm font-normal">(הפרש &lt; -0.3)</span>
                 </th>
               </tr>
             </thead>
