@@ -44,22 +44,22 @@ interface AppState {
 // ============= CONSTANTS =============
 const SCENARIOS: Record<ScenarioID, { title: string; description: string; question: string }> = {
   [ScenarioID.CHESS]: {
-    title: "תרחיש השחמט",
-    description: "דוד, שחקן שחמט מוכשר, משתתף בתחרות שחמט ארצית. במשחק בשלב המוקדם הוא מוגרל למשחק כנגד השחקן שמדורג ראשון בתחרות. דירוגו של דוד נמוך בהרבה. במהלך המשחק דוד חושב על תכסיס מבריק שעשוי להוביל אותו לניצחון מהיר. אולם, אם התרגיל יכשל, דוד יישאר בעמדה חשופה ואז ההפסד כמעט בטוח.",
-    question: "מהי ההסתברות הנמוכה ביותר שהתכסיס יצליח שאם היא תתקיים תייעץ לדוד לנסות את התכסיס? צריך להיות סיכוי של ___ ל-10."
+    title: "The Chess Scenario",
+    description: "David, a talented chess player, is taking part in a national chess tournament. In an early round he is drawn to play against the top-ranked player in the tournament. David's own ranking is much lower. During the game, David thinks of a brilliant move that could lead to a quick win. However, if the move fails, David will be left in an exposed position and defeat will be almost certain.",
+    question: "What is the lowest probability that the move will succeed at which you would advise David to try it? The chances should be ___ in 10."
   },
   [ScenarioID.MEDICAL]: {
-    title: "התרחיש הרפואי",
-    description: "גלית, שנישאה לא מזמן, גילתה לאחרונה במסגרת בדיקה רפואית שיש לה פגם בלב שמסכן את חייה מאד בזמן הריון ולידה. בתור ילדה יחידה היא תמיד קיוותה לגדל מספר ילדים. הרופא אמר לה שניתן לבצע ניתוח עדין אשר באם יצליח הבעיה תיפטר לחלוטין. אולם, ההצלחה של הניתוח איננה מובטחת ולמעשה הניתוח עשוי לגרום למוות.",
-    question: "מהי ההסתברות הנמוכה ביותר שהניתוח יצליח שאם היא תתקיים תייעץ לגלית לעבור את הניתוח? צריך להיות סיכוי של ___ ל-10."
+    title: "The Medical Scenario",
+    description: "Galit, who recently got married, has just learned from a medical check-up that she has a heart defect that would seriously endanger her life during pregnancy and childbirth. As an only child, she has always hoped to raise several children. Her doctor told her that a delicate operation could be performed which, if successful, would solve the problem completely. However, the success of the operation is not guaranteed, and in fact the operation could be fatal.",
+    question: "What is the lowest probability that the operation will succeed at which you would advise Galit to have it? The chances should be ___ in 10."
   }
 };
 
 const PHASE_NAMES = {
-  [Phase.INDIVIDUAL_INPUT]: 'קלט אישי',
-  [Phase.GROUP_FORMATION]: 'הקמת קבוצות',
-  [Phase.GROUP_DELIBERATION]: 'דיון קבוצתי',
-  [Phase.RESULTS_DEBRIEF]: 'תוצאות וניתוח'
+  [Phase.INDIVIDUAL_INPUT]: 'Individual Input',
+  [Phase.GROUP_FORMATION]: 'Group Formation',
+  [Phase.GROUP_DELIBERATION]: 'Group Discussion',
+  [Phase.RESULTS_DEBRIEF]: 'Results & Analysis'
 };
 
 // ============= UI COMPONENTS =============
@@ -98,7 +98,7 @@ const Slider: React.FC<{
   value: number;
   onChange: (val: number) => void;
 }> = ({ label, value, onChange }) => (
-  <div className="space-y-2" dir="rtl">
+  <div className="space-y-2" dir="ltr">
     <div className="flex justify-between items-center">
       <label className="text-sm font-medium text-gray-700">{label}</label>
       <span className="text-lg font-bold text-blue-600">{value}</span>
@@ -133,11 +133,11 @@ const IndividualPhase: React.FC<{
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!studentId.trim()) {
-      alert('אנא הזן את שמך או מזהה');
+      alert('Please enter your name or ID');
       return;
     }
     if (!chessJustification.trim() || !medicalJustification.trim()) {
-      alert('אנא הוסף הצדקה לשני התרחישים');
+      alert('Please add a justification for both scenarios');
       return;
     }
 
@@ -177,59 +177,59 @@ const IndividualPhase: React.FC<{
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-center mb-2">שלב 1: החלטות אישיות</h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Step 1: Individual Decisions</h1>
         <p className="text-center text-gray-600">
-          אנא קרא את שני התרחישים ושלח את החלטותיך.{' '}
-          <span className="font-semibold">{studentCount} סטודנטים</span> שלחו עד כה.
+          Please read both scenarios and submit your decisions.{' '}
+          <span className="font-semibold">{studentCount} students</span> have submitted so far.
         </p>
       </div>
 
       <Card>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="max-w-sm mx-auto">
-            <label className="block text-sm font-medium text-gray-700 mb-1">שם או מזהה</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name or ID</label>
             <input
               type="text"
               value={studentId}
               onChange={e => setStudentId(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              placeholder="הזן מזהה ייחודי..."
+              placeholder="Enter a unique ID..."
               required
             />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
-              <div className="text-right">
+              <div className="text-left">
                 <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h2>
                 <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.CHESS].description}</p>
                 <p className="font-semibold">{SCENARIOS[ScenarioID.CHESS].question}</p>
               </div>
               <div className="mt-4 space-y-4">
-                <Slider label="סף הסתברות" value={chessThreshold} onChange={setChessThreshold} />
+                <Slider label="Probability threshold" value={chessThreshold} onChange={setChessThreshold} />
                 <textarea
                   value={chessJustification}
                   onChange={(e) => setChessJustification(e.target.value)}
-                  placeholder="הצדק בקצרה את תשובתך..."
-                  className="w-full p-2 border border-gray-300 rounded-md text-right"
+                  placeholder="Briefly justify your answer..."
+                  className="w-full p-2 border border-gray-300 rounded-md text-left"
                   rows={3}
                 />
               </div>
             </Card>
             
             <Card>
-              <div className="text-right">
+              <div className="text-left">
                 <h2 className="text-2xl font-bold mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h2>
                 <p className="mb-4 text-sm">{SCENARIOS[ScenarioID.MEDICAL].description}</p>
                 <p className="font-semibold">{SCENARIOS[ScenarioID.MEDICAL].question}</p>
               </div>
               <div className="mt-4 space-y-4">
-                <Slider label="סף הסתברות" value={medicalThreshold} onChange={setMedicalThreshold} />
+                <Slider label="Probability threshold" value={medicalThreshold} onChange={setMedicalThreshold} />
                 <textarea
                   value={medicalJustification}
                   onChange={(e) => setMedicalJustification(e.target.value)}
-                  placeholder="הצדק בקצרה את תשובתך..."
-                  className="w-full p-2 border border-gray-300 rounded-md text-right"
+                  placeholder="Briefly justify your answer..."
+                  className="w-full p-2 border border-gray-300 rounded-md text-left"
                   rows={3}
                 />
               </div>
@@ -237,7 +237,7 @@ const IndividualPhase: React.FC<{
           </div>
           
           <div className="text-center">
-            <Button type="submit">שלח את ההחלטות שלי</Button>
+            <Button type="submit">Submit my decisions</Button>
           </div>
         </form>
       </Card>
@@ -273,15 +273,15 @@ const GroupDeliberationPhase: React.FC<{
   if (!currentUserGroup) {
     return (
       <Card className="max-w-2xl mx-auto text-center">
-        <h2 className="text-2xl font-bold mb-4">ממתין להקצאת קבוצה</h2>
-        <p className="text-gray-600">המרצה עדיין לא שיבץ אותך לקבוצה</p>
+        <h2 className="text-2xl font-bold mb-4">Waiting for group assignment</h2>
+        <p className="text-gray-600">The instructor has not assigned you to a group yet</p>
       </Card>
     );
   }
 
   const handleSubmit = () => {
     if (!chessJustification.trim() || !medicalJustification.trim()) {
-      alert('אנא הוסף הצדקה לשני התרחישים');
+      alert('Please add a justification for both scenarios');
       return;
     }
 
@@ -299,33 +299,33 @@ const GroupDeliberationPhase: React.FC<{
     });
     
     onStateChange({ ...state, groups: updatedGroups });
-    alert('הקונצנזוס הקבוצתי נשמר בהצלחה!');
+    alert('Group consensus saved successfully!');
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-center mb-2">שלב 3: דיון קבוצתי</h1>
-        <p className="text-center text-gray-600">דונו בקבוצה והגיעו להחלטה משותפת</p>
+        <h1 className="text-3xl font-bold text-center mb-2">Step 3: Group Discussion</h1>
+        <p className="text-center text-gray-600">Discuss as a group and reach a joint decision</p>
       </div>
 
       <Card>
         <h3 className="text-xl font-bold mb-4">{currentUserGroup.name}</h3>
-        <p className="text-sm text-gray-600 mb-6">חברי הקבוצה: {currentUserGroup.memberIds.join(', ')}</p>
+        <p className="text-sm text-gray-600 mb-6">Group members: {currentUserGroup.memberIds.join(', ')}</p>
 
         <div className="space-y-6">
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.CHESS].title}</h4>
             <Slider 
-              label="החלטת הקבוצה" 
+              label="Group decision" 
               value={chessConsensus} 
               onChange={setChessConsensus} 
             />
             <textarea
               value={chessJustification}
               onChange={(e) => setChessJustification(e.target.value)}
-              placeholder="הצדקה קצרה להחלטת הקבוצה..."
-              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-right"
+              placeholder="Brief justification for the group's decision..."
+              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-left"
               rows={2}
             />
           </div>
@@ -333,21 +333,21 @@ const GroupDeliberationPhase: React.FC<{
           <div className="p-4 bg-gray-50 rounded-lg">
             <h4 className="font-bold text-lg mb-2">{SCENARIOS[ScenarioID.MEDICAL].title}</h4>
             <Slider 
-              label="החלטת הקבוצה" 
+              label="Group decision" 
               value={medicalConsensus} 
               onChange={setMedicalConsensus} 
             />
             <textarea
               value={medicalJustification}
               onChange={(e) => setMedicalJustification(e.target.value)}
-              placeholder="הצדקה קצרה להחלטת הקבוצה..."
-              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-right"
+              placeholder="Brief justification for the group's decision..."
+              className="w-full p-2 mt-3 border border-gray-300 rounded-md text-left"
               rows={2}
             />
           </div>
 
           <div className="text-center">
-            <Button onClick={handleSubmit}>שלח קונצנזוס קבוצתי</Button>
+            <Button onClick={handleSubmit}>Submit group consensus</Button>
           </div>
         </div>
       </Card>
@@ -385,14 +385,14 @@ const GroupResultsAnalysis: React.FC<{
                     <div className="mb-6">
                       {/* Correct scale labels */}
                       <div className="flex justify-between text-sm font-medium mb-3 text-gray-700">
-                        <span>0 (מאוד מסוכן)</span>
-                        <span>5 (ממוצע)</span>
-                        <span>10 (מאוד בטוח)</span>
+                        <span>0 (very risky)</span>
+                        <span>5 (average)</span>
+                        <span>10 (very safe)</span>
                       </div>
                       
                       {/* Individual Mean Bar */}
                       <div className="mb-4">
-                        <div className="text-sm font-medium text-blue-600 mb-2">ממוצע אישי: {individualMean.toFixed(1)}</div>
+                        <div className="text-sm font-medium text-blue-600 mb-2">Individual mean: {individualMean.toFixed(1)}</div>
                         <div className="h-8 bg-gray-200 rounded border">
                           <div 
                             className="h-full bg-blue-500 rounded"
@@ -403,7 +403,7 @@ const GroupResultsAnalysis: React.FC<{
                       
                       {/* Group Decision Bar */}
                       <div className="mb-4">
-                        <div className="text-sm font-medium text-red-600 mb-2">החלטת קבוצה: {groupConsensus.toFixed(1)}</div>
+                        <div className="text-sm font-medium text-red-600 mb-2">Group decision: {groupConsensus.toFixed(1)}</div>
                         <div className="h-8 bg-gray-200 rounded border">
                           <div 
                             className="h-full bg-red-500 rounded"
@@ -414,13 +414,13 @@ const GroupResultsAnalysis: React.FC<{
                       
                       {/* Explanation */}
                       <div className="text-xs text-gray-500 mt-2 text-center">
-                        מספרים נמוכים = נכונות לקחת סיכון עם סיכוי הצלחה נמוך
+                        Lower numbers = willingness to take a risk with a low chance of success
                       </div>
                     </div>
 
                     {/* Individual ratings */}
                     <div className="text-center">
-                      <p className="text-sm text-gray-600 mb-3">דירוגים אישיים:</p>
+                      <p className="text-sm text-gray-600 mb-3">Individual ratings:</p>
                       <div className="flex gap-2 justify-center flex-wrap">
                         {groupResponses.map(r => (
                           <span key={r.id} className="px-3 py-1 bg-gray-100 border rounded text-sm">
@@ -459,12 +459,14 @@ const ClassSummaryTable: React.FC<{
       const groupConsensus = group.consensus[scenarioId]?.threshold || 0;
       const difference = groupConsensus - individualMean;
       
+      // The scale is the minimum chance of success required, so a HIGHER
+      // group threshold than the members' mean is a SAFER (more cautious) decision.
       if (Math.abs(difference) <= 0.3) {
         close++;
       } else if (difference > 0.3) {
-        riskier++;
-      } else {
         safer++;
+      } else {
+        riskier++;
       }
     });
     
@@ -481,11 +483,11 @@ const ClassSummaryTable: React.FC<{
   return (
     <div className="space-y-6">
       <Card>
-        <h2 className="text-3xl font-bold mb-8 text-center">סיכום תוצאות הכיתה</h2>
+        <h2 className="text-3xl font-bold mb-8 text-center">Class Results Summary</h2>
         
         <div className="mb-6 text-center">
           <p className="text-lg font-medium text-gray-700">
-            סה"כ קבוצות שהשלימו את שני התרחישים: <span className="text-2xl font-bold text-blue-600">{completedGroups.length}</span>
+            Total groups that completed both scenarios: <span className="text-2xl font-bold text-blue-600">{completedGroups.length}</span>
           </p>
         </div>
         
@@ -493,18 +495,18 @@ const ClassSummaryTable: React.FC<{
           <table className="w-full border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-6 py-4 text-right font-bold">תרחיש</th>
+                <th className="border border-gray-300 px-6 py-4 text-left font-bold">Scenario</th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
-                  בטוח יותר מהממוצע<br/>
-                  <span className="text-sm font-normal">(הפרש &lt; -0.3)</span>
+                  Safer than the mean<br/>
+                  <span className="text-sm font-normal">(difference &gt; +0.3)</span>
                 </th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
-                  קרוב לממוצע<br/>
-                  <span className="text-sm font-normal">(הפרש ±0.3)</span>
+                  Close to the mean<br/>
+                  <span className="text-sm font-normal">(difference within ±0.3)</span>
                 </th>
                 <th className="border border-gray-300 px-6 py-4 text-center font-bold">
-                  מסוכן יותר מהממוצע<br/>
-                  <span className="text-sm font-normal">(הפרש &gt; +0.3)</span>
+                  Riskier than the mean<br/>
+                  <span className="text-sm font-normal">(difference &lt; -0.3)</span>
                 </th>
               </tr>
             </thead>
@@ -542,7 +544,7 @@ const ClassSummaryTable: React.FC<{
         </div>
         
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>הטבלה מראה כמה קבוצות הגיעו להחלטה בטוחה יותר, קרובה או מסוכנת יותר מהממוצע הקבוצתי האישי</p>
+          <p>The table shows how many groups reached a decision that was safer than, close to, or riskier than the mean of their members' individual responses</p>
         </div>
       </Card>
     </div>
@@ -555,12 +557,12 @@ const StudentView: React.FC<{
   onStateChange: (state: AppState) => void;
 }> = ({ state, onStateChange }) => {
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50" dir="rtl">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50" dir="ltr">
       <header className="text-center mb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">כלי לימודי לקיטוב קבוצתי</h1>
-        <p className="text-gray-600">תצוגת סטודנט</p>
+        <h1 className="text-4xl font-extrabold text-gray-900 mb-2">Group Polarization Teaching Tool</h1>
+        <p className="text-gray-600">Student view</p>
         <div className="mt-4 inline-block px-4 py-2 bg-blue-100 text-blue-800 rounded-full font-medium">
-          שלב נוכחי: {PHASE_NAMES[state.phase]}
+          Current stage: {PHASE_NAMES[state.phase]}
         </div>
       </header>
       
@@ -571,10 +573,10 @@ const StudentView: React.FC<{
           <GroupDeliberationPhase state={state} onStateChange={onStateChange} />
         ) : (
           <Card className="max-w-2xl mx-auto text-center">
-            <h2 className="text-2xl font-bold mb-4">ממתין לשלב הבא</h2>
+            <h2 className="text-2xl font-bold mb-4">Waiting for the next stage</h2>
             <p className="text-gray-600">
-              {state.phase === Phase.GROUP_FORMATION && 'המרצה מקצה קבוצות...'}
-              {state.phase === Phase.RESULTS_DEBRIEF && 'המרצה מציג תוצאות...'}
+              {state.phase === Phase.GROUP_FORMATION && 'The instructor is assigning groups...'}
+              {state.phase === Phase.RESULTS_DEBRIEF && 'The instructor is presenting the results...'}
             </p>
           </Card>
         )}
@@ -617,7 +619,7 @@ const ProfessorDashboard: React.FC<{
       const groupSize = i < remainder ? baseSize + 1 : baseSize;
       newGroups.push({
         id: crypto.randomUUID(),
-        name: `קבוצה ${i + 1}`,
+        name: `Group ${i + 1}`,
         memberIds: shuffled.slice(currentIndex, currentIndex + groupSize),
         consensus: {}
       });
@@ -641,7 +643,7 @@ const ProfessorDashboard: React.FC<{
           id: crypto.randomUUID(),
           studentId,
           threshold: Math.min(10, Math.max(1, chessBase)),
-          justification: `חשיבה של ${studentId}`,
+          justification: `Reasoning of ${studentId}`,
           timestamp: Date.now()
         });
 
@@ -650,7 +652,7 @@ const ProfessorDashboard: React.FC<{
           id: crypto.randomUUID(),
           studentId,
           threshold: Math.min(10, Math.max(1, medicalBase)),
-          justification: `חשיבה של ${studentId}`,
+          justification: `Reasoning of ${studentId}`,
           timestamp: Date.now()
         });
       });
@@ -666,16 +668,16 @@ const ProfessorDashboard: React.FC<{
 
       mockGroups.push({
         id: crypto.randomUUID(),
-        name: `קבוצה ${groupNum}`,
+        name: `Group ${groupNum}`,
         memberIds,
         consensus: {
           [ScenarioID.CHESS]: {
             threshold: chessConsensus,
-            justification: `החלטה קבוצתית ${groupNum}`
+            justification: `Group decision ${groupNum}`
           },
           [ScenarioID.MEDICAL]: {
             threshold: medicalConsensus,
-            justification: `החלטה קבוצתית ${groupNum}`
+            justification: `Group decision ${groupNum}`
           }
         }
       });
@@ -690,7 +692,7 @@ const ProfessorDashboard: React.FC<{
   };
 
   const handleRestart = () => {
-    if (confirm('האם אתה בטוח? כל הנתונים יימחקו.')) {
+    if (confirm('Are you sure? All data will be deleted.')) {
       onStateChange({
         phase: Phase.INDIVIDUAL_INPUT,
         chessResponses: [],
@@ -712,37 +714,37 @@ const ProfessorDashboard: React.FC<{
       phase: Phase.INDIVIDUAL_INPUT,
       number: 1,
       icon: '📝',
-      title: 'קלט אישי',
-      description: 'סטודנטים שולחים החלטות אישיות',
+      title: 'Individual Input',
+      description: 'Students submit individual decisions',
       canProceed: allStudents.length >= 2,
-      status: allStudents.length >= 2 ? 'מוכן להמשיך' : `צריך לפחות 2 סטודנטים (${allStudents.length} עד כה)`
+      status: allStudents.length >= 2 ? 'Ready to continue' : `At least 2 students needed (${allStudents.length} so far)`
     },
     {
       phase: Phase.GROUP_FORMATION,
       number: 2,
       icon: '👥',
-      title: 'הקמת קבוצות',
-      description: 'חלק סטודנטים לקבוצות',
+      title: 'Group Formation',
+      description: 'Divide students into groups',
       canProceed: totalGroups > 0,
-      status: totalGroups === 0 ? 'צור קבוצות כדי להמשיך' : `${totalGroups} קבוצות נוצרו`
+      status: totalGroups === 0 ? 'Create groups to continue' : `${totalGroups} groups created`
     },
     {
       phase: Phase.GROUP_DELIBERATION,
       number: 3,
       icon: '💬',
-      title: 'דיון קבוצתי',
-      description: 'קבוצות מגיעות לקונצנזוס',
+      title: 'Group Discussion',
+      description: 'Groups reach consensus',
       canProceed: true,
-      status: `${completedGroups}/${totalGroups} קבוצות השלימו`
+      status: `${completedGroups}/${totalGroups} groups completed`
     },
     {
       phase: Phase.RESULTS_DEBRIEF,
       number: 4,
       icon: '📊',
-      title: 'תוצאות וניתוח',
-      description: 'צפייה וניתוח תוצאות',
+      title: 'Results & Analysis',
+      description: 'View and analyze results',
       canProceed: true,
-      status: 'ניתוח זמין'
+      status: 'Analysis available'
     }
   ];
 
@@ -750,12 +752,12 @@ const ProfessorDashboard: React.FC<{
   const currentPhaseConfig = phases[currentPhaseIndex];
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir="ltr">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="text-3xl font-bold text-gray-900">לוח בקרה למרצה</h1>
-          <p className="text-gray-600">עקוב אחר התקדמות הסטודנטים ונהל את התרגיל</p>
+          <h1 className="text-3xl font-bold text-gray-900">Instructor Dashboard</h1>
+          <p className="text-gray-600">Track student progress and manage the exercise</p>
         </div>
       </div>
 
@@ -810,7 +812,7 @@ const ProfessorDashboard: React.FC<{
                       <span className="text-2xl">{phaseConfig.icon}</span>
                       
                       {/* Title */}
-                      <div className="flex-1 text-right">
+                      <div className="flex-1 text-left">
                         <div className={`font-bold ${isActive ? 'text-blue-700' : 'text-gray-700'}`}>
                           {phaseConfig.title}
                         </div>
@@ -838,7 +840,7 @@ const ProfessorDashboard: React.FC<{
                   
                   {/* Arrow */}
                   {index < phases.length - 1 && (
-                    <div className="text-2xl text-gray-400">←</div>
+                    <div className="text-2xl text-gray-400">→</div>
                   )}
                 </React.Fragment>
               );
@@ -860,17 +862,17 @@ const ProfessorDashboard: React.FC<{
                       }}
                       className="px-8 py-3 text-lg"
                     >
-                      ➡️ סיים "{currentPhaseConfig.title}" ← התחל "{phases[currentPhaseIndex + 1]?.title}"
+                      ➡️ Finish "{currentPhaseConfig.title}" → Start "{phases[currentPhaseIndex + 1]?.title}"
                     </Button>
                     <div className="text-xs text-gray-600 bg-white px-3 py-1 rounded">
-                      {state.phase === Phase.INDIVIDUAL_INPUT && `הסטודנטים יוכלו לראות שהם משובצים לקבוצות`}
-                      {state.phase === Phase.GROUP_FORMATION && `הסטודנטים יתחילו דיון קבוצתי`}
-                      {state.phase === Phase.GROUP_DELIBERATION && `הסטודנטים יוכלו לראות את התוצאות`}
+                      {state.phase === Phase.INDIVIDUAL_INPUT && `Students will see that they are being assigned to groups`}
+                      {state.phase === Phase.GROUP_FORMATION && `Students will start the group discussion`}
+                      {state.phase === Phase.GROUP_DELIBERATION && `Students will be able to see the results`}
                     </div>
                   </>
                 ) : (
                   <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg px-6 py-3 text-center">
-                    <div className="font-bold text-yellow-800">⚠️ לא ניתן להמשיך עדיין</div>
+                    <div className="font-bold text-yellow-800">⚠️ Cannot continue yet</div>
                     <div className="text-sm text-yellow-700 mt-1">{currentPhaseConfig.status}</div>
                   </div>
                 )}
@@ -878,11 +880,11 @@ const ProfessorDashboard: React.FC<{
             )}
             
             <Button variant="danger" onClick={handleRestart} className="px-6 py-3">
-              🔄 התחל מחדש
+              🔄 Restart
             </Button>
             
             <Button variant="secondary" onClick={simulateResults} className="px-6 py-3">
-              🧪 הדמיית 5 קבוצות
+              🧪 Simulate 5 groups
             </Button>
           </div>
         </div>
@@ -892,30 +894,30 @@ const ProfessorDashboard: React.FC<{
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="border-r-4 border-blue-500">
+          <Card className="border-l-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-gray-600 text-sm">סה״כ משתתפים</div>
+                <div className="text-gray-600 text-sm">Total participants</div>
                 <div className="text-3xl font-bold text-blue-600">{allStudents.length}</div>
               </div>
               <div className="text-4xl">👥</div>
             </div>
           </Card>
           
-          <Card className="border-r-4 border-green-500">
+          <Card className="border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-gray-600 text-sm">קבוצות שהוקמו</div>
+                <div className="text-gray-600 text-sm">Groups formed</div>
                 <div className="text-3xl font-bold text-green-600">{totalGroups}</div>
               </div>
               <div className="text-4xl">🎯</div>
             </div>
           </Card>
           
-          <Card className="border-r-4 border-purple-500">
+          <Card className="border-l-4 border-purple-500">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-gray-600 text-sm">קבוצות שהשלימו</div>
+                <div className="text-gray-600 text-sm">Groups completed</div>
                 <div className="text-3xl font-bold text-purple-600">{completedGroups}/{totalGroups}</div>
               </div>
               <div className="text-4xl">✅</div>
@@ -927,11 +929,11 @@ const ProfessorDashboard: React.FC<{
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="flex border-b">
             {[
-              { id: 'overview', label: 'סקירה', icon: '📋' },
-              { id: 'responses', label: 'תשובות', icon: '📝' },
-              { id: 'groups', label: 'קבוצות', icon: '👥' },
-              { id: 'analysis', label: 'ניתוח', icon: '📊' },
-              { id: 'summary', label: 'סיכום כיתתי', icon: '📈' },
+              { id: 'overview', label: 'Overview', icon: '📋' },
+              { id: 'responses', label: 'Responses', icon: '📝' },
+              { id: 'groups', label: 'Groups', icon: '👥' },
+              { id: 'analysis', label: 'Analysis', icon: '📊' },
+              { id: 'summary', label: 'Class Summary', icon: '📈' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -944,7 +946,7 @@ const ProfessorDashboard: React.FC<{
                   }
                 `}
               >
-                <span className="ml-2">{tab.icon}</span>
+                <span className="mr-2">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -958,11 +960,11 @@ const ProfessorDashboard: React.FC<{
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
                   <h3 className="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
                     <span className="text-3xl">{currentPhaseConfig.icon}</span>
-                    שלב נוכחי: {currentPhaseConfig.title}
+                    Current stage: {currentPhaseConfig.title}
                   </h3>
                   <p className="text-gray-700 mb-3">{currentPhaseConfig.description}</p>
                   <div className="bg-white rounded p-3 inline-block">
-                    <span className="font-semibold">סטטוס:</span> {currentPhaseConfig.status}
+                    <span className="font-semibold">Status:</span> {currentPhaseConfig.status}
                   </div>
                 </div>
 
@@ -970,24 +972,24 @@ const ProfessorDashboard: React.FC<{
                 {state.phase === Phase.INDIVIDUAL_INPUT && (
                   <>
                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 Guidance for this stage:</h4>
                       <ul className="space-y-2 text-gray-700">
-                        <li>• שתף את קישור הסטודנטים עם הכיתה</li>
-                        <li>• המתן שהסטודנטים ישלחו את התשובות האישיות שלהם</li>
-                        <li>• מינימום 2 סטודנטים נדרשים להמשיך</li>
-                        <li>• סטודנטים נוכחיים: <strong>{allStudents.length}</strong></li>
+                        <li>• Share the student link with the class</li>
+                        <li>• Wait for students to submit their individual responses</li>
+                        <li>• At least 2 students are needed to continue</li>
+                        <li>• Current students: <strong>{allStudents.length}</strong></li>
                       </ul>
                     </div>
                     
                     {/* Student View Preview */}
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
                       <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                        <span>👁️</span> What students see now:
                       </h4>
                       <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
-                        <h5 className="font-bold text-lg mb-2">הערכה אישית</h5>
-                        <p className="text-gray-700 text-sm">הסטודנטים רואים את שני התרחישים ומזינים את התשובות האישיות שלהם (סף + הצדקה)</p>
+                        <div className="text-sm text-gray-600 mb-2">[Student view]</div>
+                        <h5 className="font-bold text-lg mb-2">Individual assessment</h5>
+                        <p className="text-gray-700 text-sm">Students see both scenarios and enter their individual responses (threshold + justification)</p>
                       </div>
                     </div>
                   </>
@@ -996,24 +998,24 @@ const ProfessorDashboard: React.FC<{
                 {state.phase === Phase.GROUP_FORMATION && (
                   <>
                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 Guidance for this stage:</h4>
                       <ul className="space-y-2 text-gray-700">
-                        <li>• עבור לטאב "קבוצות" כדי לצור קבוצות</li>
-                        <li>• השתמש ביצירה אוטומטית או הקצה סטודנטים ידנית</li>
-                        <li>• גודל קבוצה מומלץ: 3-5 סטודנטים</li>
-                        <li>• לאחר יצירת הקבוצות, עבור לשלב 3</li>
+                        <li>• Go to the "Groups" tab to create groups</li>
+                        <li>• Use automatic grouping or assign students manually</li>
+                        <li>• Recommended group size: 3–5 students</li>
+                        <li>• Once the groups are created, move to stage 3</li>
                       </ul>
                     </div>
                     
                     {/* Student View Preview */}
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
                       <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                        <span>👁️</span> What students see now:
                       </h4>
                       <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
-                        <h5 className="font-bold text-lg mb-2">ממתין לשיבוץ קבוצתי</h5>
-                        <p className="text-gray-700 text-sm">הסטודנטים רואים הודעה: "תשובותיך נשמרו. ממתין שהמרצה יחלק לקבוצות..."</p>
+                        <div className="text-sm text-gray-600 mb-2">[Student view]</div>
+                        <h5 className="font-bold text-lg mb-2">Waiting for group assignment</h5>
+                        <p className="text-gray-700 text-sm">Students see the message: "Your answers have been saved. Waiting for the instructor to form groups..."</p>
                       </div>
                     </div>
                   </>
@@ -1022,27 +1024,27 @@ const ProfessorDashboard: React.FC<{
                 {state.phase === Phase.GROUP_DELIBERATION && (
                   <>
                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
-                      <h4 className="font-bold text-yellow-900 mb-3">💡 הנחיות לשלב זה:</h4>
+                      <h4 className="font-bold text-yellow-900 mb-3">💡 Guidance for this stage:</h4>
                       <ul className="space-y-2 text-gray-700">
-                        <li>• הקבוצות כעת דנות ומגיעות לקונצנזוס</li>
-                        <li>• עקוב אחר התקדמות בטאב "קבוצות"</li>
-                        <li>• קבוצות שהשלימו: <strong>{completedGroups}/{totalGroups}</strong></li>
-                        <li>• כשמספיק קבוצות סיימו, עבור לתוצאות</li>
+                        <li>• Groups are now discussing and reaching consensus</li>
+                        <li>• Track progress in the "Groups" tab</li>
+                        <li>• Groups completed: <strong>{completedGroups}/{totalGroups}</strong></li>
+                        <li>• When enough groups have finished, move to the results</li>
                       </ul>
                     </div>
                     
                     {/* Student View Preview */}
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
                       <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                        <span>👁️</span> What students see now:
                       </h4>
                       <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
-                        <h5 className="font-bold text-lg mb-2">דיון קבוצתי</h5>
-                        <p className="text-gray-700 text-sm mb-2">הסטודנטים רואים:</p>
+                        <div className="text-sm text-gray-600 mb-2">[Student view]</div>
+                        <h5 className="font-bold text-lg mb-2">Group Discussion</h5>
+                        <p className="text-gray-700 text-sm mb-2">Students see:</p>
                         <ul className="text-sm text-gray-700 list-disc list-inside">
-                          <li>את התשובות האישיות של כל חברי הקבוצה</li>
-                          <li>טופס להזנת קונצנזוס קבוצתי (סף + הצדקה משותפת)</li>
+                          <li>The individual responses of all group members</li>
+                          <li>A form for entering the group consensus (threshold + shared justification)</li>
                         </ul>
                       </div>
                     </div>
@@ -1052,28 +1054,28 @@ const ProfessorDashboard: React.FC<{
                 {state.phase === Phase.RESULTS_DEBRIEF && (
                   <>
                     <div className="bg-green-50 border-2 border-green-200 rounded-lg p-6">
-                      <h4 className="font-bold text-green-900 mb-3">💡 התרגיל הסתיים!</h4>
+                      <h4 className="font-bold text-green-900 mb-3">💡 The exercise is complete!</h4>
                       <ul className="space-y-2 text-gray-700">
-                        <li>• צפה בניתוח מפורט בטאב "ניתוח"</li>
-                        <li>• דון בתוצאות עם הכיתה</li>
-                        <li>• הסבר את דפוסי הפולריזציה שזוהו</li>
-                        <li>• ניתן להתחיל תרגיל חדש עם כפתור "התחל מחדש"</li>
+                        <li>• See the detailed analysis in the "Analysis" tab</li>
+                        <li>• Discuss the results with the class</li>
+                        <li>• Explain the polarization patterns that emerged</li>
+                        <li>• You can start a new exercise with the "Restart" button</li>
                       </ul>
                     </div>
                     
                     {/* Student View Preview */}
                     <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
                       <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-                        <span>👁️</span> מה הסטודנטים רואים עכשיו:
+                        <span>👁️</span> What students see now:
                       </h4>
                       <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-                        <div className="text-sm text-gray-600 mb-2">[תצוגת סטודנט]</div>
-                        <h5 className="font-bold text-lg mb-2">תוצאות וניתוח</h5>
-                        <p className="text-gray-700 text-sm mb-2">הסטודנטים רואים:</p>
+                        <div className="text-sm text-gray-600 mb-2">[Student view]</div>
+                        <h5 className="font-bold text-lg mb-2">Results & Analysis</h5>
+                        <p className="text-gray-700 text-sm mb-2">Students see:</p>
                         <ul className="text-sm text-gray-700 list-disc list-inside">
-                          <li>השוואה בין התשובה האישית לקונצנזוס הקבוצתי שלהם</li>
-                          <li>היסטוגרמות המראות את התפלגות התשובות</li>
-                          <li>ניתוח של מגמות הפולריזציה</li>
+                          <li>A comparison of their individual answer with their group's consensus</li>
+                          <li>Histograms showing the distribution of responses</li>
+                          <li>An analysis of polarization trends</li>
                         </ul>
                       </div>
                     </div>
@@ -1084,7 +1086,7 @@ const ProfessorDashboard: React.FC<{
 
             {activeTab === 'responses' && (
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold mb-4">תשובות אישיות</h3>
+                <h3 className="text-2xl font-bold mb-4">Individual Responses</h3>
                 {[ScenarioID.CHESS, ScenarioID.MEDICAL].map(scenarioId => {
                   const responses = scenarioId === ScenarioID.CHESS ? state.chessResponses : state.medicalResponses;
                   return (
@@ -1094,9 +1096,9 @@ const ProfessorDashboard: React.FC<{
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b">
-                              <th className="text-right p-2">סטודנט</th>
-                              <th className="text-center p-2">סף</th>
-                              <th className="text-right p-2">הצדקה</th>
+                              <th className="text-left p-2">Student</th>
+                              <th className="text-center p-2">Threshold</th>
+                              <th className="text-left p-2">Justification</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1119,13 +1121,13 @@ const ProfessorDashboard: React.FC<{
             {activeTab === 'groups' && (
               <div className="space-y-4">
                 <Card>
-                  <h3 className="text-xl font-bold mb-4">ניהול קבוצות</h3>
+                  <h3 className="text-xl font-bold mb-4">Group Management</h3>
                   
                   {/* Auto-grouping with preview */}
                   <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold mb-3">חלוקה אוטומטית לקבוצות</h4>
+                    <h4 className="font-semibold mb-3">Automatic Grouping</h4>
                     <p className="text-sm text-gray-600 mb-3">
-                      סה"כ {allStudents.length} סטודנטים. בחר גודל קבוצה מועדף:
+                      {allStudents.length} students in total. Choose a preferred group size:
                     </p>
                     
                     <div className="grid grid-cols-3 gap-3 mb-3">
@@ -1145,11 +1147,11 @@ const ProfessorDashboard: React.FC<{
                           <button
                             key={targetSize}
                             onClick={() => createAutoGroups(targetSize)}
-                            className="bg-white border-2 border-blue-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg p-3 transition-all text-right"
+                            className="bg-white border-2 border-blue-300 hover:border-blue-500 hover:bg-blue-50 rounded-lg p-3 transition-all text-left"
                           >
-                            <div className="font-bold text-blue-700 mb-1">גודל מועדף: {targetSize}</div>
+                            <div className="font-bold text-blue-700 mb-1">Preferred size: {targetSize}</div>
                             <div className="text-xs text-gray-600">
-                              תוצאה: {numGroups} קבוצות
+                              Result: {numGroups} groups
                             </div>
                             <div className="text-xs text-gray-500 mt-1">
                               {largerGroups > 0 && `${largerGroups}×${baseSize + 1}`}
@@ -1162,7 +1164,7 @@ const ProfessorDashboard: React.FC<{
                     </div>
                     
                     <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
-                      💡 האלגוריתם מחלק באופן שווה ככל האפשר כדי למנוע קבוצות קטנות מדי
+                      💡 The algorithm divides students as evenly as possible to avoid groups that are too small
                     </div>
                   </div>
                 </Card>
@@ -1173,13 +1175,13 @@ const ProfessorDashboard: React.FC<{
                     {state.groups.map(group => (
                       <Card key={group.id}>
                         <h4 className="font-bold mb-2">{group.name}</h4>
-                        <p className="text-sm text-gray-600">חברים ({group.memberIds.length}): {group.memberIds.join(', ')}</p>
+                        <p className="text-sm text-gray-600">Members ({group.memberIds.length}): {group.memberIds.join(', ')}</p>
                         <div className="mt-2 space-y-1">
                           <p className="text-xs">
-                            שחמט: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
+                            Chess: {group.consensus[ScenarioID.CHESS] ? `✓ ${group.consensus[ScenarioID.CHESS].threshold}` : '✗'}
                           </p>
                           <p className="text-xs">
-                            רפואי: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
+                            Medical: {group.consensus[ScenarioID.MEDICAL] ? `✓ ${group.consensus[ScenarioID.MEDICAL].threshold}` : '✗'}
                           </p>
                         </div>
                       </Card>
@@ -1216,8 +1218,8 @@ const App: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
-        <div className="text-xl text-gray-600">טוען...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="ltr">
+        <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
   }

@@ -9,18 +9,18 @@
 }
 
 body {
-  font-family: 'Arial', 'David', 'Calibri', sans-serif;
-  direction: rtl;
+  font-family: 'Arial', 'Calibri', sans-serif;
+  direction: ltr;
   background-color: #f9fafb;
 }
 
 input[type="text"],
 input[type="number"],
 textarea {
-  direction: rtl;
-  text-align: right;
+  direction: ltr;
+  text-align: left;
 }
 
 table {
-  direction: rtl;
+  direction: ltr;
 }

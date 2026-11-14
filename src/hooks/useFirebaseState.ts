@@ -22,7 +22,7 @@ export const useFirebaseState = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const docRef = doc(db, 'sessions', 'current');
+    const docRef = doc(db, 'sessions', 'current_en');
     
     const unsubscribe = onSnapshot(docRef, 
       (doc) => {
@@ -45,7 +45,7 @@ export const useFirebaseState = () => {
 
   const updateState = async (newState: any) => {  // שינוי ל-any
     try {
-      const docRef = doc(db, 'sessions', 'current');
+      const docRef = doc(db, 'sessions', 'current_en');
       await setDoc(docRef, JSON.parse(JSON.stringify(newState)));
     } catch (error) {
       console.error("Error updating state:", error);
