@@ -41,6 +41,10 @@ interface AppState {
   groups: Group[];
 }
 
+// Changes are made from the latest saved data (see useFirebaseState), never from this page's copy.
+type StateChange = (updater: (current: AppState) => AppState) => Promise<boolean>;
+type AddResponses = (chess: IndividualResponse, medical: IndividualResponse) => Promise<boolean>;
+
 // ============= CONSTANTS =============
 const SCENARIOS: Record<ScenarioID, { title: string; description: string; question: string }> = {
   [ScenarioID.CHESS]: {
@@ -122,17 +126,22 @@ const Slider: React.FC<{
 // ============= STUDENT PHASES =============
 const IndividualPhase: React.FC<{
   state: AppState;
-  onStateChange: (state: AppState) => void;
-}> = ({ state, onStateChange }) => {
+  addResponses: AddResponses;
+}> = ({ state, addResponses }) => {
   const [studentId, setStudentId] = useState('');
   const [chessThreshold, setChessThreshold] = useState(5);
   const [chessJustification, setChessJustification] = useState('');
   const [medicalThreshold, setMedicalThreshold] = useState(5);
   const [medicalJustification, setMedicalJustification] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+  const [mine, setMine] = useState<string | null>(() => localStorage.getItem('currentStudentId'));
+  const [justSaved, setJustSaved] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!studentId.trim()) {
+    const name = studentId.trim();
+    if (!name) {
       alert('Please enter your name or ID');
       return;
     }
@@ -140,31 +149,37 @@ const IndividualPhase: React.FC<{
       alert('Please add a justification for both scenarios');
       return;
     }
+    // Two students with the same name would be counted as one person.
+    if (state.chessResponses.some(r => r.studentId.trim().toLowerCase() === name.toLowerCase())) {
+      alert(`The name "${name}" has already been submitted. If you already submitted, your decisions are saved. Otherwise, add something to your name (for example the first letter of your surname).`);
+      return;
+    }
 
     const newChess: IndividualResponse = {
       id: crypto.randomUUID(),
-      studentId: studentId.trim(),
+      studentId: name,
       threshold: chessThreshold,
       justification: chessJustification,
       timestamp: Date.now()
     };
-    
+
     const newMedical: IndividualResponse = {
       id: crypto.randomUUID(),
-      studentId: studentId.trim(),
+      studentId: name,
       threshold: medicalThreshold,
       justification: medicalJustification,
       timestamp: Date.now()
     };
 
-    onStateChange({
-      ...state,
-      chessResponses: [...state.chessResponses, newChess],
-      medicalResponses: [...state.medicalResponses, newMedical]
-    });
-    
-    localStorage.setItem('currentStudentId', studentId.trim());
-    
+    setSaving(true);
+    const ok = await addResponses(newChess, newMedical);
+    setSaving(false);
+    if (!ok) return;   // the student was told; the form keeps what they wrote
+
+    localStorage.setItem('currentStudentId', name);
+    setMine(name);
+    setJustSaved(true);
+
     setStudentId('');
     setChessThreshold(5);
     setChessJustification('');
@@ -173,6 +188,27 @@ const IndividualPhase: React.FC<{
   };
 
   const studentCount = new Set(state.chessResponses.map(r => r.studentId)).size;
+  // Confirmed by the saved data itself, not only by this page.
+  const mineIsSaved = !!mine && state.chessResponses.some(r => r.studentId === mine);
+  useEffect(() => { if (mineIsSaved) setJustSaved(false); }, [mineIsSaved]);
+
+  if (mine && (mineIsSaved || justSaved)) {
+    return (
+      <Card className="max-w-2xl mx-auto text-center">
+        <div className="text-5xl mb-4">✅</div>
+        <h2 className="text-2xl font-bold mb-2">Your decisions were saved, {mine}</h2>
+        <p className="text-gray-600 mb-4">Please wait for the next step. The instructor will move the class on.</p>
+        <p className="text-sm text-gray-500">{studentCount} students have submitted so far.</p>
+        <button
+          type="button"
+          onClick={() => { localStorage.removeItem('currentStudentId'); setMine(null); setJustSaved(false); }}
+          className="mt-6 text-sm text-blue-600 underline"
+        >
+          Someone else using this device? Click here
+        </button>
+      </Card>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -237,7 +273,7 @@ const IndividualPhase: React.FC<{
           </div>
           
           <div className="text-center">
-            <Button type="submit">Submit my decisions</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Submit my decisions'}</Button>
           </div>
         </form>
       </Card>
@@ -247,7 +283,7 @@ const IndividualPhase: React.FC<{
 
 const GroupDeliberationPhase: React.FC<{
   state: AppState;
-  onStateChange: (state: AppState) => void;
+  onStateChange: StateChange;
 }> = ({ state, onStateChange }) => {
   const currentStudentId = localStorage.getItem('currentStudentId');
   const currentUserGroup = state.groups.find(g => g.memberIds.includes(currentStudentId || ''));
@@ -279,27 +315,22 @@ const GroupDeliberationPhase: React.FC<{
     );
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!chessJustification.trim() || !medicalJustification.trim()) {
       alert('Please add a justification for both scenarios');
       return;
     }
 
-    const updatedGroups = state.groups.map(g => {
-      if (g.id === currentUserGroup.id) {
-        return {
-          ...g,
-          consensus: {
-            [ScenarioID.CHESS]: { threshold: chessConsensus, justification: chessJustification },
-            [ScenarioID.MEDICAL]: { threshold: medicalConsensus, justification: medicalJustification }
-          }
-        };
-      }
-      return g;
-    });
-    
-    onStateChange({ ...state, groups: updatedGroups });
-    alert('Group consensus saved successfully!');
+    const consensus = {
+      [ScenarioID.CHESS]: { threshold: chessConsensus, justification: chessJustification },
+      [ScenarioID.MEDICAL]: { threshold: medicalConsensus, justification: medicalJustification }
+    };
+    const groupId = currentUserGroup.id;
+    const ok = await onStateChange(current => ({
+      ...current,
+      groups: current.groups.map(g => g.id === groupId ? { ...g, consensus } : g)
+    }));
+    if (ok) alert('Group consensus saved successfully!');
   };
 
   return (
@@ -554,8 +585,9 @@ const ClassSummaryTable: React.FC<{
 // ============= STUDENT VIEW =============
 const StudentView: React.FC<{
   state: AppState;
-  onStateChange: (state: AppState) => void;
-}> = ({ state, onStateChange }) => {
+  onStateChange: StateChange;
+  addResponses: AddResponses;
+}> = ({ state, onStateChange, addResponses }) => {
   return (
     <div className="min-h-screen p-4 sm:p-6 md:p-8 bg-gray-50" dir="ltr">
       <header className="text-center mb-8">
@@ -568,7 +600,7 @@ const StudentView: React.FC<{
       
       <main>
         {state.phase === Phase.INDIVIDUAL_INPUT ? (
-          <IndividualPhase state={state} onStateChange={onStateChange} />
+          <IndividualPhase state={state} addResponses={addResponses} />
         ) : state.phase === Phase.GROUP_DELIBERATION ? (
           <GroupDeliberationPhase state={state} onStateChange={onStateChange} />
         ) : (
@@ -589,7 +621,7 @@ const StudentView: React.FC<{
 // ============= PROFESSOR VIEW - IMPROVED =============
 const ProfessorDashboard: React.FC<{
   state: AppState;
-  onStateChange: (state: AppState) => void;
+  onStateChange: StateChange;
 }> = ({ state, onStateChange }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'responses' | 'groups' | 'analysis' | 'summary'>('overview');
   
@@ -626,7 +658,7 @@ const ProfessorDashboard: React.FC<{
       currentIndex += groupSize;
     }
     
-    onStateChange({ ...state, groups: newGroups });
+    onStateChange(current => ({ ...current, groups: newGroups }));
   };
 
   const simulateResults = () => {
@@ -683,22 +715,22 @@ const ProfessorDashboard: React.FC<{
       });
     }
 
-    onStateChange({
-      ...state,
-      chessResponses: [...state.chessResponses, ...mockChessResponses],
-      medicalResponses: [...state.medicalResponses, ...mockMedicalResponses],
-      groups: [...state.groups, ...mockGroups]
-    });
+    onStateChange(current => ({
+      ...current,
+      chessResponses: [...current.chessResponses, ...mockChessResponses],
+      medicalResponses: [...current.medicalResponses, ...mockMedicalResponses],
+      groups: [...current.groups, ...mockGroups]
+    }));
   };
 
   const handleRestart = () => {
     if (confirm('Are you sure? All data will be deleted.')) {
-      onStateChange({
+      onStateChange(() => ({
         phase: Phase.INDIVIDUAL_INPUT,
         chessResponses: [],
         medicalResponses: [],
         groups: []
-      });
+      }));
     }
   };
 
@@ -776,7 +808,7 @@ const ProfessorDashboard: React.FC<{
                   <button
                     onClick={() => {
                       if (isAccessible || index < currentPhaseIndex) {
-                        onStateChange({ ...state, phase: phaseConfig.phase });
+                        onStateChange(current => ({ ...current, phase: phaseConfig.phase }));
                       }
                     }}
                     disabled={!isAccessible && index > currentPhaseIndex}
@@ -857,7 +889,7 @@ const ProfessorDashboard: React.FC<{
                       onClick={() => {
                         const nextPhase = phases[currentPhaseIndex + 1];
                         if (nextPhase) {
-                          onStateChange({ ...state, phase: nextPhase.phase });
+                          onStateChange(current => ({ ...current, phase: nextPhase.phase }));
                         }
                       }}
                       className="px-8 py-3 text-lg"
@@ -1207,7 +1239,7 @@ const ProfessorDashboard: React.FC<{
 
 // ============= MAIN APP =============
 const App: React.FC = () => {
-  const { state, updateState, loading } = useFirebaseState();
+  const { state, updateState, addResponses, loading } = useFirebaseState();
   const [view, setView] = useState<'student' | 'professor'>('student');
 
   useEffect(() => {
@@ -1227,7 +1259,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {view === 'student' ? (
-        <StudentView state={state} onStateChange={updateState} />
+        <StudentView state={state} onStateChange={updateState} addResponses={addResponses} />
       ) : (
         <ProfessorDashboard state={state} onStateChange={updateState} />
       )}
