@@ -1244,6 +1244,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (window.location.pathname.includes('/professor')) {
       setView('professor');
+      // Slightly larger text on the professor dashboard (easier to read when projected).
+      // Tailwind sizes are in rem, so this scales the whole dashboard; the student view is unchanged.
+      document.documentElement.style.fontSize = '18px';
     }
   }, []);
 
